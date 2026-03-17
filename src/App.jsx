@@ -360,179 +360,849 @@ function TimerAlert({ item, onResolve, onSnooze }) {
 
 function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checkins, onLogout }) {
   const m = MODES[mode];
-  const savedAmount = spendLog.filter(e=>e.decision==="skip").reduce((s,e)=>s+(e.amount||0),0);
-  const hasReady = readyItems.length > 0;
+  const savedAmount = spendLog.filter(e => e.decision === "skip").reduce((s, e) => s + (e.amount || 0), 0);
   const totalCheckins = (checkins || []).length;
   const spendEntries = spendLog.filter(e => e.type === "spend");
+  const hasReady = readyItems.length > 0;
   const isSurvival = mode === "survival";
+  const isLight = mode === "light";
 
-  // Streak
+  // ---- Streak ----
   let streak = 0;
   if (totalCheckins > 0) {
-    const today = new Date(); today.setHours(0,0,0,0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const uniqueDays = [...new Set(checkins.map(c => {
-      const d = new Date(c.created_at); d.setHours(0,0,0,0); return d.getTime();
-    }))].sort((a,b) => b - a);
-    const diffFromToday = Math.floor((today.getTime() - uniqueDays[0]) / (1000*60*60*24));
+      const d = new Date(c.created_at);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    }))].sort((a, b) => b - a);
+
+    const diffFromToday = Math.floor((today.getTime() - uniqueDays[0]) / (1000 * 60 * 60 * 24));
     if (diffFromToday <= 1) {
       streak = 1;
       for (let i = 1; i < uniqueDays.length; i++) {
-        if (Math.floor((uniqueDays[i-1] - uniqueDays[i]) / (1000*60*60*24)) === 1) streak++;
+        const gap = Math.floor((uniqueDays[i - 1] - uniqueDays[i]) / (1000 * 60 * 60 * 24));
+        if (gap === 1) streak++;
         else break;
       }
     }
   }
 
-  // Mode breakdown
+  // ---- Mode breakdown ----
   const modeCount = { full: 0, light: 0, survival: 0 };
-  (checkins || []).forEach(c => { if (modeCount[c.mode] !== undefined) modeCount[c.mode]++; });
+  (checkins || []).forEach(c => {
+    if (modeCount[c.mode] !== undefined) modeCount[c.mode]++;
+  });
 
-  // Spend insight
-  const survSpend = spendEntries.filter(e => e.modeAtTime === "survival");
+  // ---- Spend insight ----
+  const survivalSpend = spendEntries.filter(e => e.modeAtTime === "survival");
   const fullSpend = spendEntries.filter(e => e.modeAtTime === "full");
-  const survSkipRate = survSpend.length > 0 ? Math.round((survSpend.filter(e=>e.decision==="skip").length / survSpend.length)*100) : null;
-  const fullSkipRate = fullSpend.length > 0 ? Math.round((fullSpend.filter(e=>e.decision==="skip").length / fullSpend.length)*100) : null;
+
+  const survivalSkipRate =
+    survivalSpend.length > 0
+      ? Math.round((survivalSpend.filter(e => e.decision === "skip").length / survivalSpend.length) * 100)
+      : null;
+
+  const fullSkipRate =
+    fullSpend.length > 0
+      ? Math.round((fullSpend.filter(e => e.decision === "skip").length / fullSpend.length) * 100)
+      : null;
+
+  let insightLine = null;
+  if (survivalSkipRate !== null && fullSkipRate !== null) {
+    if (survivalSkipRate < fullSkipRate) {
+      insightLine = {
+        text: "You skip less on Survival days — watch impulse spending when your capacity is low.",
+        color: "#F87171",
+        bg: "#2E0A0A",
+        border: "#F8717130",
+      };
+    } else {
+      insightLine = {
+        text: "Your skip rate holds up on hard days. The guardrails are working.",
+        color: "#4ADE80",
+        bg: "#0A2E1A",
+        border: "#4ADE8030",
+      };
+    }
+  } else if (totalCheckins >= 3) {
+    const mostCommon = Object.entries(modeCount).sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (mostCommon === "survival") {
+      insightLine = {
+        text: "You’ve had more low-capacity days lately. Keep decisions simple when you can.",
+        color: "#F87171",
+        bg: "#2E0A0A",
+        border: "#F8717130",
+      };
+    } else if (mostCommon === "light") {
+      insightLine = {
+        text: "Most days lately have been mixed. Use Decision Gate before emotional choices.",
+        color: "#FBBF24",
+        bg: "#2E2A0A",
+        border: "#FBBF2430",
+      };
+    } else {
+      insightLine = {
+        text: "You’ve mostly been in a strong decision state lately. Good time to tackle what matters.",
+        color: "#4ADE80",
+        bg: "#0A2E1A",
+        border: "#4ADE8030",
+      };
+    }
+  }
+
+  const primaryCard = {
+    display: "flex",
+    alignItems: "center",
+    gap: 14,
+    padding: "20px 20px",
+    background: "#0F172A",
+    borderRadius: 18,
+    cursor: "pointer",
+    width: "100%",
+    textAlign: "left",
+    position: "relative",
+    boxShadow: "0 0 0 1px rgba(99,102,241,0.18) inset",
+    border: "1px solid #1E293B",
+  };
+
+  const secondaryRow = {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: "13px 16px",
+    background: "#0F172A",
+    border: "1px solid #1E293B",
+    borderRadius: 12,
+    cursor: "pointer",
+    width: "100%",
+    textAlign: "left",
+  };
+
+  const miniStat = {
+    flex: 1,
+    background: "#020617",
+    border: "1px solid #1E293B",
+    borderRadius: 12,
+    padding: "12px 10px",
+    textAlign: "center",
+  };
 
   return (
-    <div style={{minHeight:"100vh",padding:"32px 20px 24px",maxWidth:480,margin:"0 auto"}}>
-
-      {/* ===== 1. HERO ===== */}
-      <div style={{background:m.bg,border:"2px solid "+m.color+"30",borderRadius:20,padding:"24px 22px",marginBottom:16,textAlign:"center"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:8}}>
-          <span style={{fontSize:28}}>{m.emoji}</span>
-          <h1 style={{fontFamily:"'Fraunces', serif",fontSize:28,fontWeight:600,color:m.color,margin:0}}>{m.label}</h1>
+    <div style={{ minHeight: "100vh", padding: "28px 20px 24px", maxWidth: 480, margin: "0 auto" }}>
+      {/* HERO */}
+      <div
+        style={{
+          background: m.bg,
+          border: "2px solid " + m.color + "30",
+          borderRadius: 24,
+          padding: "24px 22px",
+          marginBottom: 18,
+          boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 10 }}>
+          <span style={{ fontSize: 30 }}>{m.emoji}</span>
+          <h1
+            style={{
+              fontFamily: "'Fraunces', serif",
+              fontSize: 30,
+              fontWeight: 600,
+              color: m.color,
+              margin: 0,
+            }}
+          >
+            {m.label}
+          </h1>
         </div>
-        <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:14,color:"#94A3B8",margin:"0 0 10px",lineHeight:1.5}}>{m.desc}</p>
-        <div style={{borderTop:"1px solid "+m.color+"20",paddingTop:10}}>
-          <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:13,color:"#E2E8F0",margin:0,lineHeight:1.5}}>{m.focus}</p>
+
+        <p
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 15,
+            color: "#A7B4C8",
+            margin: "0 0 14px",
+            lineHeight: 1.5,
+            textAlign: "center",
+          }}
+        >
+          {m.desc}
+        </p>
+
+        <div
+          style={{
+            borderTop: "1px solid " + m.color + "20",
+            paddingTop: 14,
+            textAlign: "center",
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 11,
+              color: "#64748B",
+              margin: "0 0 6px",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
+            Today’s focus
+          </p>
+          <p
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 17,
+              color: "#E2E8F0",
+              margin: 0,
+              lineHeight: 1.5,
+            }}
+          >
+            {m.focus}
+          </p>
         </div>
       </div>
 
-      {/* ===== 2. TIMERS ===== */}
-      {hasReady&&(<button onClick={()=>setScreen("timer-alert")} style={{width:"100%",padding:"14px 18px",background:"#1A1A2E",border:"2px solid #6366F1",borderRadius:14,marginBottom:12,cursor:"pointer",display:"flex",alignItems:"center",gap:12,animation:"pulse 2s ease-in-out infinite"}}>
-        <span style={{fontSize:24}}>⏰</span>
-        <div style={{flex:1,textAlign:"left"}}>
-          <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:14,fontWeight:600,color:"#6366F1",margin:0}}>{readyItems.length} timer{readyItems.length>1?"s":""} up!</p>
-          <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:12,color:"#94A3B8",margin:"2px 0 0"}}>Tap to decide — still want {readyItems.length>1?"them":"it"}?</p>
-        </div>
-        <span style={{color:"#6366F1",fontSize:18}}>›</span>
-      </button>)}
-      {pendingItems.length>0&&(<div style={{marginBottom:16}}>
-        <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:11,color:"#64748B",marginBottom:8,fontWeight:600,textTransform:"uppercase",letterSpacing:1}}>Waiting on</p>
-        {pendingItems.map(item=>{const remaining=timeRemaining(item.expiry);return(
-          <div key={item.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#0F172A",border:"1px solid #1E293B",borderRadius:10,marginBottom:6}}>
-            <div><p style={{fontFamily:"'DM Sans', sans-serif",fontSize:13,color:"#E2E8F0",margin:0}}>{item.item}</p><p style={{fontFamily:"'DM Sans', sans-serif",fontSize:11,color:"#64748B",margin:"2px 0 0"}}>${item.amount.toLocaleString()}</p></div>
-            <div style={{background:"#1E293B",borderRadius:6,padding:"4px 10px"}}><p style={{fontFamily:"'DM Sans', sans-serif",fontSize:12,color:"#6366F1",margin:0,fontWeight:600}}>{remaining||"Ready!"}</p></div>
-          </div>);})}
-      </div>)}
-
-      {/* ===== 3. PRIMARY ACTIONS ===== */}
-      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-        <button onClick={()=>setScreen("decision")} style={{display:"flex",alignItems:"center",gap:14,padding:"20px 20px",background:"#0F172A",border:mode==="light"?"2px solid #FBBF2450":isSurvival?"2px solid #F8717140":"2px solid #6366F140",borderRadius:16,cursor:"pointer",width:"100%",textAlign:"left",position:"relative"}}>
-          {mode==="light"&&<div style={{position:"absolute",top:-9,right:14,background:"#FBBF24",borderRadius:7,padding:"2px 9px"}}><p style={{fontFamily:"'DM Sans', sans-serif",fontSize:10,fontWeight:700,color:"#020617",margin:0,textTransform:"uppercase",letterSpacing:0.5}}>Recommended</p></div>}
-          <span style={{fontSize:28,flexShrink:0}}>🛡️</span>
-          <div style={{flex:1}}>
-            <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:17,fontWeight:600,color:"#F1F5F9",margin:0}}>Decision Gate</p>
-            <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:13,color:"#64748B",margin:"3px 0 0"}}>Should I make this decision right now?</p>
+      {/* READY TIMERS */}
+      {hasReady && (
+        <button
+          onClick={() => setScreen("timer-alert")}
+          style={{
+            width: "100%",
+            padding: "15px 18px",
+            background: "#1A1A2E",
+            border: "2px solid #6366F1",
+            borderRadius: 16,
+            marginBottom: 12,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            animation: "pulse 2s ease-in-out infinite",
+            textAlign: "left",
+          }}
+        >
+          <span style={{ fontSize: 24 }}>⏰</span>
+          <div style={{ flex: 1 }}>
+            <p
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 14,
+                fontWeight: 700,
+                color: "#818CF8",
+                margin: 0,
+              }}
+            >
+              {readyItems.length} timer{readyItems.length > 1 ? "s" : ""} ready
+            </p>
+            <p
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 12,
+                color: "#94A3B8",
+                margin: "3px 0 0",
+              }}
+            >
+              Time to decide with a clear head.
+            </p>
           </div>
-          <span style={{color:"#334155",fontSize:18}}>›</span>
-        </button>
-
-        <button onClick={()=>setScreen("spend")} style={{display:"flex",alignItems:"center",gap:14,padding:"20px 20px",background:"#0F172A",border:isSurvival?"2px solid #F8717150":"2px solid #6366F140",borderRadius:16,cursor:"pointer",width:"100%",textAlign:"left",position:"relative"}}>
-          {isSurvival&&<div style={{position:"absolute",top:-9,right:14,background:"#F87171",borderRadius:7,padding:"2px 9px"}}><p style={{fontFamily:"'DM Sans', sans-serif",fontSize:10,fontWeight:700,color:"#020617",margin:0,textTransform:"uppercase",letterSpacing:0.5}}>Recommended</p></div>}
-          <span style={{fontSize:28,flexShrink:0}}>💳</span>
-          <div style={{flex:1}}>
-            <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:17,fontWeight:600,color:"#F1F5F9",margin:0}}>Spend Check</p>
-            <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:13,color:isSurvival?"#F87171":"#64748B",margin:"3px 0 0"}}>{isSurvival?"⚠️ Be extra careful today":"Thinking about buying something?"}</p>
-          </div>
-          <span style={{color:"#334155",fontSize:18}}>›</span>
-        </button>
-      </div>
-
-      {/* ===== 4. LEARNING — combined stats + patterns + see all ===== */}
-      {totalCheckins > 0 && (
-        <button onClick={()=>setScreen("patterns")} style={{width:"100%",background:"#0F172A",border:"1px solid #1E293B",borderRadius:14,padding:"16px 18px",marginBottom:20,cursor:"pointer",textAlign:"left"}}>
-          {/* Stats row */}
-          <div style={{display:"flex",gap:0,marginBottom:totalCheckins>=3?12:0}}>
-            <div style={{flex:1,textAlign:"center"}}>
-              <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:10,color:"#64748B",margin:0,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>Streak</p>
-              <p style={{fontFamily:"'Fraunces', serif",fontSize:20,color:streak>=3?"#4ADE80":"#E2E8F0",margin:"2px 0 0"}}>{streak}d</p>
-            </div>
-            <div style={{flex:1,textAlign:"center",borderLeft:"1px solid #1E293B",borderRight:"1px solid #1E293B"}}>
-              <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:10,color:"#64748B",margin:0,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>Saved</p>
-              <p style={{fontFamily:"'Fraunces', serif",fontSize:20,color:savedAmount>0?"#4ADE80":"#E2E8F0",margin:"2px 0 0"}}>${savedAmount.toLocaleString()}</p>
-            </div>
-            <div style={{flex:1,textAlign:"center"}}>
-              <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:10,color:"#64748B",margin:0,fontWeight:600,textTransform:"uppercase",letterSpacing:0.5}}>Check-ins</p>
-              <p style={{fontFamily:"'Fraunces', serif",fontSize:20,color:"#E2E8F0",margin:"2px 0 0"}}>{totalCheckins}</p>
-            </div>
-          </div>
-
-          {/* Mode bars + insight (after 3 check-ins) */}
-          {totalCheckins >= 3 && (<>
-            <div style={{borderTop:"1px solid #1E293B",paddingTop:12}}>
-              {["full","light","survival"].map(md => {
-                const pct = Math.round((modeCount[md] / totalCheckins) * 100);
-                const colors = { full: "#4ADE80", light: "#FBBF24", survival: "#F87171" };
-                return pct > 0 ? (
-                  <div key={md} style={{display:"flex",alignItems:"center",gap:8,marginBottom:5}}>
-                    <span style={{fontSize:11,width:14}}>{MODES[md].emoji}</span>
-                    <div style={{flex:1,height:5,background:"#1E293B",borderRadius:3,overflow:"hidden"}}>
-                      <div style={{height:"100%",width:pct+"%",background:colors[md],borderRadius:3}}/>
-                    </div>
-                    <span style={{fontFamily:"'DM Sans', sans-serif",fontSize:11,color:"#64748B",width:30,textAlign:"right"}}>{pct}%</span>
-                  </div>
-                ) : null;
-              })}
-              {survSkipRate !== null && fullSkipRate !== null && survSkipRate < fullSkipRate && (
-                <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:12,color:"#F87171",margin:"8px 0 0",lineHeight:1.4}}>⚠️ You skip less on Survival days — watch impulse spending when low.</p>
-              )}
-              {survSkipRate !== null && fullSkipRate !== null && survSkipRate >= fullSkipRate && (
-                <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:12,color:"#4ADE80",margin:"8px 0 0",lineHeight:1.4}}>💪 Your skip rate holds on hard days. Guardrails working.</p>
-              )}
-            </div>
-          </>)}
-
-          {/* See all */}
-          <div style={{display:"flex",justifyContent:"flex-end",marginTop:10}}>
-            <span style={{fontFamily:"'DM Sans', sans-serif",fontSize:12,color:"#6366F1",fontWeight:500}}>See all patterns →</span>
-          </div>
+          <span style={{ color: "#818CF8", fontSize: 18 }}>›</span>
         </button>
       )}
 
-      {/* ===== 5. SECONDARY TOOLS ===== */}
-      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
-        <button onClick={()=>setScreen("history")} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:"#0F172A",border:"1px solid #1E293B",borderRadius:12,cursor:"pointer",width:"100%",textAlign:"left"}}>
-          <span style={{fontSize:18,flexShrink:0}}>📊</span>
-          <div style={{flex:1}}>
-            <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:14,fontWeight:500,color:"#E2E8F0",margin:0}}>Decision Log</p>
-            <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:11,color:"#64748B",margin:"2px 0 0"}}>{spendLog.length === 0 ? "Start building your pattern" : spendLog.length + " entries"}</p>
+      {/* PENDING TIMERS */}
+      {pendingItems.length > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          <p
+            style={{
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: 11,
+              color: "#64748B",
+              marginBottom: 8,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+            }}
+          >
+            Waiting on
+          </p>
+
+          <div
+            style={{
+              background: "#0F172A",
+              border: "1px solid #1E293B",
+              borderRadius: 14,
+              padding: "10px 12px",
+            }}
+          >
+            {pendingItems.map((item, index) => {
+              const remaining = timeRemaining(item.expiry);
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: index === pendingItems.length - 1 ? "8px 4px" : "8px 4px 12px",
+                    borderBottom: index === pendingItems.length - 1 ? "none" : "1px solid #1E293B",
+                  }}
+                >
+                  <div>
+                    <p
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 14,
+                        color: "#E2E8F0",
+                        margin: 0,
+                      }}
+                    >
+                      {item.item}
+                    </p>
+                    <p
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 12,
+                        color: "#64748B",
+                        margin: "3px 0 0",
+                      }}
+                    >
+                      ${item.amount.toLocaleString()}
+                    </p>
+                  </div>
+
+                  <div
+                    style={{
+                      background: "#1E293B",
+                      borderRadius: 10,
+                      padding: "6px 12px",
+                    }}
+                  >
+                    <p
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 13,
+                        color: "#818CF8",
+                        margin: 0,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {remaining || "Ready"}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <span style={{color:"#334155",fontSize:16}}>›</span>
+        </div>
+      )}
+
+      {/* MAIN ACTIONS */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 18 }}>
+        <button
+          onClick={() => setScreen("decision")}
+          style={{
+            ...primaryCard,
+            border: isLight ? "1px solid #FBBF2450" : isSurvival ? "1px solid #F8717150" : "1px solid #2A3655",
+          }}
+        >
+          {isLight && (
+            <div
+              style={{
+                position: "absolute",
+                top: -9,
+                right: 14,
+                background: "#FBBF24",
+                borderRadius: 8,
+                padding: "2px 9px",
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "#020617",
+                  margin: 0,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Recommended
+              </p>
+            </div>
+          )}
+
+          <span style={{ fontSize: 28, flexShrink: 0 }}>🛡️</span>
+          <div style={{ flex: 1 }}>
+            <p
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 18,
+                fontWeight: 700,
+                color: "#F1F5F9",
+                margin: 0,
+              }}
+            >
+              Decision Gate
+            </p>
+            <p
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13,
+                color: "#64748B",
+                margin: "4px 0 0",
+              }}
+            >
+              Check whether now is a good time to decide.
+            </p>
+          </div>
+          <span style={{ color: "#334155", fontSize: 18 }}>›</span>
         </button>
 
-        <button onClick={()=>setScreen("transition")} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 16px",background:"#0F172A",border:"1px solid #1E293B",borderRadius:12,cursor:"pointer",width:"100%",textAlign:"left"}}>
-          <span style={{fontSize:18,flexShrink:0}}>🔄</span>
-          <div style={{flex:1}}>
-            <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:14,fontWeight:500,color:"#E2E8F0",margin:0}}>Change Gears</p>
-            <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:11,color:"#64748B",margin:"2px 0 0"}}>Help me switch what I'm doing</p>
-          </div>
-          <span style={{color:"#334155",fontSize:16}}>›</span>
-        </button>
+        <button
+          onClick={() => setScreen("spend")}
+          style={{
+            ...primaryCard,
+            border: isSurvival ? "1px solid #F8717150" : "1px solid #2A3655",
+          }}
+        >
+          {isSurvival && (
+            <div
+              style={{
+                position: "absolute",
+                top: -9,
+                right: 14,
+                background: "#F87171",
+                borderRadius: 8,
+                padding: "2px 9px",
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: "#020617",
+                  margin: 0,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Recommended
+              </p>
+            </div>
+          )}
 
-        <button onClick={()=>setScreen("quicklog")} style={{display:"flex",alignItems:"center",gap:12,padding:"11px 16px",background:"transparent",border:"1px solid #1E293B",borderRadius:10,cursor:"pointer",width:"100%",textAlign:"left"}}>
-          <span style={{fontSize:14}}>⚡</span>
-          <p style={{fontFamily:"'DM Sans', sans-serif",fontSize:13,color:"#64748B",margin:0}}>Quick log a purchase</p>
+          <span style={{ fontSize: 28, flexShrink: 0 }}>💳</span>
+          <div style={{ flex: 1 }}>
+            <p
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 18,
+                fontWeight: 700,
+                color: "#F1F5F9",
+                margin: 0,
+              }}
+            >
+              Spend Check
+            </p>
+            <p
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13,
+                color: isSurvival ? "#F87171" : "#64748B",
+                margin: "4px 0 0",
+              }}
+            >
+              {isSurvival ? "Be extra careful with spending today." : "Pause purchases before impulse takes over."}
+            </p>
+          </div>
+          <span style={{ color: "#334155", fontSize: 18 }}>›</span>
         </button>
       </div>
 
-      {/* ===== 6. UTILITY ===== */}
-      <button onClick={()=>setScreen("checkin")} style={{width:"100%",padding:"11px",background:"transparent",border:"1px solid #1E293B",borderRadius:10,color:"#64748B",fontFamily:"'DM Sans', sans-serif",fontSize:13,cursor:"pointer",marginBottom:6}}>Redo check-in →</button>
-      <button onClick={onLogout} style={{width:"100%",padding:"10px",background:"transparent",border:"none",color:"#334155",fontFamily:"'DM Sans', sans-serif",fontSize:12,cursor:"pointer"}}>Log out</button>
+      {/* LEARNING SECTION */}
+      {totalCheckins > 0 && (
+        <div
+          style={{
+            background: "#0F172A",
+            border: "1px solid #1E293B",
+            borderRadius: 18,
+            padding: "16px 16px 14px",
+            marginBottom: 18,
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11,
+                  color: "#64748B",
+                  margin: "0 0 4px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                }}
+              >
+                Learning
+              </p>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 16,
+                  color: "#E2E8F0",
+                  margin: 0,
+                  fontWeight: 600,
+                }}
+              >
+                What the app is learning about you
+              </p>
+            </div>
+
+            <button
+              onClick={() => setScreen("patterns")}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#818CF8",
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: "pointer",
+                padding: 0,
+              }}
+            >
+              See all →
+            </button>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginBottom: totalCheckins >= 3 ? 12 : 0 }}>
+            <div style={miniStat}>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 10,
+                  color: "#64748B",
+                  margin: 0,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Streak
+              </p>
+              <p
+                style={{
+                  fontFamily: "'Fraunces', serif",
+                  fontSize: 22,
+                  color: streak >= 3 ? "#4ADE80" : "#E2E8F0",
+                  margin: "3px 0 0",
+                }}
+              >
+                {streak}
+              </p>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11,
+                  color: "#64748B",
+                  margin: "2px 0 0",
+                }}
+              >
+                day{streak !== 1 ? "s" : ""}
+              </p>
+            </div>
+
+            <div style={miniStat}>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 10,
+                  color: "#64748B",
+                  margin: 0,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Saved
+              </p>
+              <p
+                style={{
+                  fontFamily: "'Fraunces', serif",
+                  fontSize: 22,
+                  color: savedAmount > 0 ? "#4ADE80" : "#E2E8F0",
+                  margin: "3px 0 0",
+                }}
+              >
+                ${savedAmount.toLocaleString()}
+              </p>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11,
+                  color: "#64748B",
+                  margin: "2px 0 0",
+                }}
+              >
+                total
+              </p>
+            </div>
+
+            <div style={miniStat}>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 10,
+                  color: "#64748B",
+                  margin: 0,
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Check-ins
+              </p>
+              <p
+                style={{
+                  fontFamily: "'Fraunces', serif",
+                  fontSize: 22,
+                  color: "#E2E8F0",
+                  margin: "3px 0 0",
+                }}
+              >
+                {totalCheckins}
+              </p>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11,
+                  color: "#64748B",
+                  margin: "2px 0 0",
+                }}
+              >
+                total
+              </p>
+            </div>
+          </div>
+
+          {totalCheckins >= 3 && (
+            <div
+              style={{
+                background: "#020617",
+                border: "1px solid #1E293B",
+                borderRadius: 14,
+                padding: "12px 12px 10px",
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11,
+                  color: "#64748B",
+                  margin: "0 0 10px",
+                  fontWeight: 700,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Mode snapshot
+              </p>
+
+              {["full", "light", "survival"].map(md => {
+                const pct = Math.round((modeCount[md] / totalCheckins) * 100);
+                const colors = { full: "#4ADE80", light: "#FBBF24", survival: "#F87171" };
+                return pct > 0 ? (
+                  <div key={md} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                    <span style={{ fontSize: 12, width: 14 }}>{MODES[md].emoji}</span>
+                    <div style={{ flex: 1, height: 6, background: "#1E293B", borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: pct + "%", background: colors[md], borderRadius: 4 }} />
+                    </div>
+                    <span
+                      style={{
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: 11,
+                        color: "#64748B",
+                        width: 30,
+                        textAlign: "right",
+                      }}
+                    >
+                      {pct}%
+                    </span>
+                  </div>
+                ) : null;
+              })}
+
+              {insightLine && (
+                <div
+                  style={{
+                    background: insightLine.bg,
+                    border: "1px solid " + insightLine.border,
+                    borderRadius: 10,
+                    padding: "9px 11px",
+                    marginTop: 10,
+                  }}
+                >
+                  <p
+                    style={{
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontSize: 12,
+                      color: insightLine.color,
+                      margin: 0,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {insightLine.text}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SECONDARY TOOLS */}
+      <div style={{ marginBottom: 16 }}>
+        <p
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 11,
+            color: "#64748B",
+            margin: "0 0 8px",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: 1,
+          }}
+        >
+          More tools
+        </p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <button onClick={() => setScreen("history")} style={secondaryRow}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>📊</span>
+            <div style={{ flex: 1 }}>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#E2E8F0",
+                  margin: 0,
+                }}
+              >
+                Decision Log
+              </p>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11,
+                  color: "#64748B",
+                  margin: "2px 0 0",
+                }}
+              >
+                {spendLog.length === 0 ? "Start building your pattern" : spendLog.length + " entries"}
+              </p>
+            </div>
+            <span style={{ color: "#334155", fontSize: 16 }}>›</span>
+          </button>
+
+          <button onClick={() => setScreen("transition")} style={secondaryRow}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>🔄</span>
+            <div style={{ flex: 1 }}>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: "#E2E8F0",
+                  margin: 0,
+                }}
+              >
+                Change Gears
+              </p>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 11,
+                  color: "#64748B",
+                  margin: "2px 0 0",
+                }}
+              >
+                Use a short reset when you need to switch states
+              </p>
+            </div>
+            <span style={{ color: "#334155", fontSize: 16 }}>›</span>
+          </button>
+
+          <button
+            onClick={() => setScreen("quicklog")}
+            style={{
+              width: "100%",
+              padding: "11px 14px",
+              background: "transparent",
+              border: "1px solid #1E293B",
+              borderRadius: 10,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              textAlign: "left",
+            }}
+          >
+            <span style={{ fontSize: 14 }}>⚡</span>
+            <span
+              style={{
+                fontFamily: "'DM Sans', sans-serif",
+                fontSize: 13,
+                color: "#64748B",
+              }}
+            >
+              Quick log a purchase
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* UTILITY */}
+      <button
+        onClick={() => setScreen("checkin")}
+        style={{
+          width: "100%",
+          padding: "12px",
+          background: "transparent",
+          border: "1px solid #1E293B",
+          borderRadius: 10,
+          color: "#64748B",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 13,
+          cursor: "pointer",
+          marginBottom: 6,
+        }}
+      >
+        Redo check-in →
+      </button>
+
+      <button
+        onClick={onLogout}
+        style={{
+          width: "100%",
+          padding: "10px",
+          background: "transparent",
+          border: "none",
+          color: "#334155",
+          fontFamily: "'DM Sans', sans-serif",
+          fontSize: 12,
+          cursor: "pointer",
+        }}
+      >
+        Log out
+      </button>
     </div>
   );
 }
-
 // ============ DECISION GATE ============
 
 function DecisionGate({ mode, onBack, onLog }) {
