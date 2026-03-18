@@ -734,10 +734,12 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
         <p style={sectionLabel}>More tools</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <button onClick={() => setScreen("history")} style={secondaryCard}>
-            <span style={{ fontSize: 22, flexShrink: 0 }}>📊</span>
+            <span style={{ fontSize: 22, flexShrink: 0 }}>🪦</span>
             <div style={{ flex: 1 }}>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>Decision Log</p>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>{spendLog.length} entries · {spendEntries.filter(e => e.decision === "skip").length} delayed · {spendEntries.filter(e => e.decision === "buy").length} decided</p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>The Graveyard</p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>
+                {spendEntries.filter(e => e.decision === "skip").length} impulses buried · ${savedAmount.toLocaleString()} saved
+              </p>
             </div>
             <span style={{ color: "#51627D", fontSize: 20 }}>›</span>
           </button>
@@ -1425,6 +1427,124 @@ function TransitionPicker({ onBack }) {
   );
 }
 
+// ============ THE GRAVEYARD ============
+
+function Graveyard({ spendLog, onBack, onResurrect }) {
+  const [resurrectTarget, setResurrectTarget] = useState(null);
+
+  // Filter only the skipped purchases and reverse them so the newest is at the top
+  const buriedItems = spendLog.filter(e => e.decision === "skip").reverse();
+  const totalBuried = buriedItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+
+  return (
+    <div style={{ minHeight: "100vh", padding: "32px 20px", maxWidth: 480, margin: "0 auto", position: "relative" }}>
+      {/* Animation for the drop-in effect */}
+      <style>{`
+        @keyframes tombstoneDrop {
+          0% { transform: translateY(-40px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
+      `}</style>
+
+      {/* 1. THE HEADER (High Score) */}
+      <div style={{ textAlign: "center", marginBottom: 40 }}>
+        <span style={{ fontSize: 40, display: "block", marginBottom: 8 }}>🪦</span>
+        <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#64748B", textTransform: "uppercase", letterSpacing: 2, fontWeight: 700, margin: "0 0 8px" }}>
+          Total Value Buried
+        </h2>
+        <p style={{ fontFamily: "'Fraunces', serif", fontSize: 48, color: "#4ADE80", margin: 0, fontWeight: 600, textShadow: "0 0 20px rgba(74,222,128,0.2)" }}>
+          ${totalBuried.toLocaleString()}
+        </p>
+      </div>
+
+      {/* 2. THE CEMETERY GRID */}
+      {buriedItems.length === 0 ? (
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#475569", textAlign: "center", marginTop: 40 }}>
+          The graveyard is empty. Start skipping purchases to fill these plots.
+        </p>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          {buriedItems.map((item, index) => {
+            // Slight delay for each card so they drop in one after the other
+            const delay = index * 0.05; 
+            
+            return (
+              <button
+                key={index}
+                onClick={() => setResurrectTarget(item)}
+                style={{
+                  background: "linear-gradient(180deg, #1E293B 0%, #0F172A 100%)",
+                  border: "2px solid #334155",
+                  borderBottomWidth: 4,
+                  borderRadius: "50px 50px 8px 8px",
+                  padding: "24px 12px 16px",
+                  textAlign: "center",
+                  cursor: "pointer",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.5)",
+                  animation: \`tombstoneDrop 0.5s ease-out \${delay}s both\`,
+                  transition: "transform 0.2s ease",
+                }}
+              >
+                <p style={{ fontFamily: "'Fraunces', serif", fontSize: 18, color: "#94A3B8", margin: "0 0 12px", fontWeight: 600 }}>R.I.P.</p>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#F1F5F9", margin: "0 0 8px", fontWeight: 700, lineHeight: 1.3, minHeight: 36, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {item.item.length > 30 ? item.item.substring(0, 30) + "..." : item.item}
+                </p>
+                <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, color: "#4ADE80", margin: "0 0 12px", fontWeight: 600 }}>
+                  ${(item.amount || 0).toLocaleString()}
+                </p>
+                <div style={{ width: "80%", height: 1, background: "#334155", marginBottom: 10 }}></div>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#64748B", margin: 0, textTransform: "uppercase" }}>
+                  Buried:<br/>{item.date}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <button onClick={onBack} style={{ width: "100%", padding: "16px", background: "transparent", border: "1px solid #1E293B", borderRadius: 12, color: "#64748B", fontSize: 15, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", marginTop: 40, marginBottom: 32 }}>
+        ← Leave the graveyard
+      </button>
+
+      {/* 3. THE RESURRECTION WARNING MODAL */}
+      {resurrectTarget && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(2, 6, 23, 0.9)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, zIndex: 1000 }}>
+          <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: 24, padding: "32px 24px", width: "100%", maxWidth: 340, textAlign: "center", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)" }}>
+            <span style={{ fontSize: 48, display: "block", marginBottom: 16 }}>🧟</span>
+            <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 24, color: "#F1F5F9", margin: "0 0 12px", lineHeight: 1.3 }}>
+              Hold up. Are you trying to resurrect this?
+            </h3>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#94A3B8", margin: "0 0 32px", lineHeight: 1.5 }}>
+              You managed to keep this <strong style={{ color: "#F1F5F9" }}>${(resurrectTarget.amount || 0).toLocaleString()}</strong> impulse in the ground. You already won this battle. Let it rest.
+            </p>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* Massive, easy-to-hit primary button */}
+              <button onClick={() => setResurrectTarget(null)} style={{ padding: "18px", background: "#4ADE80", border: "none", borderRadius: 16, color: "#020617", fontSize: 16, fontFamily: "'DM Sans', sans-serif", fontWeight: 700, cursor: "pointer", width: "100%", boxShadow: "0 4px 14px rgba(74,222,128,0.3)" }}>
+                Leave it buried
+              </button>
+              
+              {/* Tiny, high-friction secondary button */}
+              <button 
+                onClick={() => {
+                  if (onResurrect) onResurrect(resurrectTarget);
+                  setResurrectTarget(null);
+                }} 
+                style={{ padding: "12px", background: "transparent", border: "none", color: "#475569", fontSize: 13, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", textDecoration: "underline" }}
+              >
+                Resurrect (Buy)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ============ DECISION LOG ============
 
 function DecisionLog({ spendLog, onBack }) {
@@ -1927,7 +2047,7 @@ export default function App() {
           {screen === "spend" && <SpendCheck mode={mode} onBack={() => setScreen("dashboard")} onWait={handleWait} onBuyNow={handleBuyNow} />}
           {screen === "quicklog" && <QuickLog onBack={() => setScreen("dashboard")} onLog={handleLogEntry} />}
           {screen === "transition" && <TransitionPicker onBack={() => setScreen("dashboard")} />}
-          {screen === "history" && <DecisionLog spendLog={spendLog} onBack={() => setScreen("dashboard")} />}
+          {screen === "history" && <Graveyard spendLog={spendLog} onBack={() => setScreen("dashboard")} onResurrect={(item) => console.log("User tried to resurrect:", item)} />}
           {screen === "patterns" && <Patterns checkins={checkins} spendLog={spendLog} onBack={() => setScreen("dashboard")} />}
           {screen === "timer-alert" && currentTimerAlert && <TimerAlert item={currentTimerAlert} onResolve={handleTimerResolve} onSnooze={handleSnooze} />}
         </>
