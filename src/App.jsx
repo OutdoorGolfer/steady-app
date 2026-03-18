@@ -525,51 +525,23 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
     }
   }
 
-  const modeCount = { full: 0, light: 0, survival: 0 };
-  (checkins || []).forEach(c => {
-    if (modeCount[c.mode] !== undefined) modeCount[c.mode]++;
-  });
-
-  const patternData = ["full", "light", "survival"].map(key => ({
-    key,
-    label: MODES[key].label.replace(" Day", ""),
-    pct: totalCheckins > 0 ? Math.round((modeCount[key] / totalCheckins) * 100) : 0,
-    color: MODES[key].color,
-  })).filter(x => x.pct > 0);
-
-  const survivalSpend = spendEntries.filter(e => e.modeAtTime === "survival");
-  const fullSpend = spendEntries.filter(e => e.modeAtTime === "full");
-  const survivalSkipRate = survivalSpend.length > 0 ? Math.round((survivalSpend.filter(e => e.decision === "skip").length / survivalSpend.length) * 100) : null;
-  const fullSkipRate = fullSpend.length > 0 ? Math.round((fullSpend.filter(e => e.decision === "skip").length / fullSpend.length) * 100) : null;
-
-  let learningInsight = null;
-  if (survivalSkipRate !== null && fullSkipRate !== null && survivalSkipRate < fullSkipRate) {
-    learningInsight = {
-      tone: "warn",
-      text: "Pattern: You’re more likely to spend quickly on low-capacity days.",
-    };
-  } else if (survivalSkipRate !== null && fullSkipRate !== null && survivalSkipRate >= fullSkipRate) {
-    learningInsight = {
-      tone: "good",
-      text: "Pattern: Your guardrails are still holding up even on hard days.",
-    };
-  } else if (totalCheckins >= 3) {
-    const mostCommon = Object.entries(modeCount).sort((a, b) => b[1] - a[1])[0]?.[0];
-    if (mostCommon === "survival") {
-      learningInsight = {
-        tone: "warn",
-        text: "Pattern: You’ve had more low-capacity days lately. Keep decisions simple when you can.",
-      };
-    } else if (mostCommon === "light") {
-      learningInsight = {
-        tone: "mixed",
-        text: "Pattern: Most days lately have been mixed. Use Decision Gate before emotional choices.",
-      };
+  // --- NEW LEARNING INSIGHT LOGIC ---
+  let realTalkInsight = null;
+  if (totalCheckins >= 3) {
+    const recentCheckins = checkins.slice(0, 7);
+    const survivalCount = recentCheckins.filter(c => c.mode === "survival").length;
+    const badSleepCount = recentCheckins.filter(c => c.sleep === 1).length;
+    const survivalSpend = spendEntries.filter(e => e.modeAtTime === "survival");
+    const survivalSkipRate = survivalSpend.length > 0 ? Math.round((survivalSpend.filter(e => e.decision === "skip").length / survivalSpend.length) * 100) : null;
+    
+    if (survivalCount >= 4) {
+       realTalkInsight = { icon: "🔋", title: "Running on Empty", text: `You've had ${survivalCount} Survival days recently. You are running a marathon right now. Keep your decisions as small as possible today.`, color: "#F87171", bg: "#2E0A0A" };
+    } else if (badSleepCount >= 2 && survivalSkipRate !== null && survivalSkipRate < 50) {
+       realTalkInsight = { icon: "⚠️", title: "Your Trigger", text: "You are more likely to impulse-buy on days you report Bad Sleep. Keep your wallet out of reach today.", color: "#FBBF24", bg: "#2E2A0A" };
+    } else if (savedAmount > 0) {
+       realTalkInsight = { icon: "🛡️", title: "Your Shield", text: "The wait timer is working for you. You are successfully blocking impulse buys when you force yourself to pause.", color: "#4ADE80", bg: "#0A2E1A" };
     } else {
-      learningInsight = {
-        tone: "good",
-        text: "Pattern: You’ve mostly been in a strong decision state lately. Good time to tackle what matters.",
-      };
+       realTalkInsight = { icon: "🧠", title: "Finding Rhythm", text: "You are logging consistently. Keep using the tools and your patterns will continue to clear up.", color: "#818CF8", bg: "#171C4D" };
     }
   }
 
@@ -625,284 +597,99 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
   return (
     <div style={{ minHeight: "100vh", padding: "30px 20px 24px", maxWidth: 480, margin: "0 auto" }}>
       {/* HERO */}
-      <section
-        style={{
-          background: m.bg,
-          border: "2px solid " + m.color + "30",
-          borderRadius: 28,
-          padding: "22px 20px",
-          marginBottom: 18,
-          boxShadow: "0 18px 36px rgba(0,0,0,0.16)",
-        }}
-      >
+      <section style={{ background: m.bg, border: "2px solid " + m.color + "30", borderRadius: 28, padding: "22px 20px", marginBottom: 18, boxShadow: "0 18px 36px rgba(0,0,0,0.16)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
           <div style={{ width: 30, height: 30, borderRadius: 999, background: m.color, boxShadow: `0 0 22px ${m.color}99` }} />
           <div>
             <p style={{ ...sectionLabel, margin: "0 0 4px", color: m.color + "AA" }}>Today</p>
-            <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 40, lineHeight: 1, fontWeight: 600, color: m.color, margin: 0 }}>
-              {m.label}
-            </h1>
+            <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 40, lineHeight: 1, fontWeight: 600, color: m.color, margin: 0 }}>{m.label}</h1>
           </div>
         </div>
-
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 17, color: "#D5DFEC", margin: "16px 0 18px", lineHeight: 1.5 }}>
-          {m.desc}
-        </p>
-
-        <div
-          style={{
-            background: "rgba(0,0,0,0.10)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            borderRadius: 22,
-            padding: "16px 16px",
-          }}
-        >
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 17, color: "#D5DFEC", margin: "16px 0 18px", lineHeight: 1.5 }}>{m.desc}</p>
+        <div style={{ background: "rgba(0,0,0,0.10)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 22, padding: "16px 16px" }}>
           <p style={{ ...sectionLabel, margin: "0 0 10px", color: "#A8C7B5" }}>Today’s focus</p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: "#F1F5F9", margin: "0 0 16px", lineHeight: 1.55 }}>
-            {m.focus}
-          </p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#98D4B1", margin: 0, lineHeight: 1.45 }}>
-            Best use today: decisions that matter, not decisions you’re avoiding.
-          </p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: "#F1F5F9", margin: "0 0 16px", lineHeight: 1.55 }}>{m.focus}</p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#98D4B1", margin: 0, lineHeight: 1.45 }}>Best use today: decisions that matter, not decisions you’re avoiding.</p>
         </div>
       </section>
 
       {/* READY TIMER */}
       {hasReady && (
-        <section
-          style={{
-            background: "#11133A",
-            border: "1px solid #3B3FD9",
-            borderRadius: 24,
-            padding: "18px 18px",
-            marginBottom: 16,
-            boxShadow: "0 10px 24px rgba(0,0,0,0.14)",
-          }}
-        >
+        <section style={{ background: "#11133A", border: "1px solid #3B3FD9", borderRadius: 24, padding: "18px 18px", marginBottom: 16, boxShadow: "0 10px 24px rgba(0,0,0,0.14)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start" }}>
             <div>
               <p style={{ ...sectionLabel, margin: "0 0 10px", color: "#8F95F6" }}>Needs attention</p>
-              <h3 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: "#F1F5F9", margin: "0 0 10px", fontWeight: 700 }}>
-                {readyItems.length} timer{readyItems.length > 1 ? "s are" : " is"} ready
-              </h3>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#B6C0D2", margin: 0, lineHeight: 1.5 }}>
-                Review what you paused earlier and decide with a clear head.
-              </p>
+              <h3 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: "#F1F5F9", margin: "0 0 10px", fontWeight: 700 }}>{readyItems.length} timer{readyItems.length > 1 ? "s are" : " is"} ready</h3>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#B6C0D2", margin: 0, lineHeight: 1.5 }}>Review what you paused earlier.</p>
             </div>
-
-            <button
-              onClick={() => setScreen("timer-alert")}
-              style={{
-                background: "#6366F1",
-                border: "none",
-                borderRadius: 16,
-                color: "#fff",
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 15,
-                fontWeight: 700,
-                padding: "14px 18px",
-                cursor: "pointer",
-                flexShrink: 0,
-              }}
-            >
-              Review
-            </button>
+            <button onClick={() => setScreen("timer-alert")} style={{ background: "#6366F1", border: "none", borderRadius: 16, color: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, padding: "14px 18px", cursor: "pointer", flexShrink: 0 }}>Review</button>
           </div>
         </section>
       )}
 
       {/* PRIMARY ACTIONS */}
       <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 18 }}>
-        <button
-          onClick={() => setScreen("decision")}
-          style={{
-            ...primaryCardStyle,
-            border: isLight ? "1px solid #FBBF2450" : isSurvival ? "1px solid #F8717150" : "1px solid #2A3655",
-          }}
-        >
-          <div style={{ ...iconWrap, background: "rgba(74,222,128,0.08)" }}>
-            <span style={{ fontSize: 28 }}>🛡️</span>
-          </div>
-
+        <button onClick={() => setScreen("decision")} style={{ ...primaryCardStyle, border: isLight ? "1px solid #FBBF2450" : isSurvival ? "1px solid #F8717150" : "1px solid #2A3655" }}>
+          <div style={{ ...iconWrap, background: "rgba(74,222,128,0.08)" }}><span style={{ fontSize: 28 }}>🛡️</span></div>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>
-                Decision Gate
-              </p>
-              <span
-                style={{
-                  background: "rgba(74,222,128,0.10)",
-                  color: "#6EE7B7",
-                  borderRadius: 999,
-                  padding: "4px 10px",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: 2,
-                  textTransform: "uppercase",
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                Primary
-              </span>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>Decision Gate</p>
+              <span style={{ background: "rgba(74,222,128,0.10)", color: "#6EE7B7", borderRadius: 999, padding: "4px 10px", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>Primary</span>
             </div>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#93A4BD", margin: 0, lineHeight: 1.45 }}>
-              Check whether now is a good time to decide.
-            </p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#93A4BD", margin: 0, lineHeight: 1.45 }}>Check whether now is a good time to decide.</p>
           </div>
           <span style={{ color: "#51627D", fontSize: 22 }}>›</span>
         </button>
 
-        <button
-          onClick={() => setScreen("spend")}
-          style={{
-            ...primaryCardStyle,
-            border: isSurvival ? "1px solid #F8717150" : "1px solid #2A3655",
-          }}
-        >
-          <div style={{ ...iconWrap, background: "rgba(251,191,36,0.08)" }}>
-            <span style={{ fontSize: 28 }}>💳</span>
-          </div>
-
+        <button onClick={() => setScreen("spend")} style={{ ...primaryCardStyle, border: isSurvival ? "1px solid #F8717150" : "1px solid #2A3655" }}>
+          <div style={{ ...iconWrap, background: "rgba(251,191,36,0.08)" }}><span style={{ fontSize: 28 }}>💳</span></div>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>
-                Spend Check
-              </p>
-              <span
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  color: "#CBD5E1",
-                  borderRadius: 999,
-                  padding: "4px 10px",
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: 2,
-                  textTransform: "uppercase",
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-              >
-                Fast
-              </span>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>Spend Check</p>
+              <span style={{ background: "rgba(255,255,255,0.06)", color: "#CBD5E1", borderRadius: 999, padding: "4px 10px", fontSize: 10, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif" }}>Fast</span>
             </div>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#93A4BD", margin: 0, lineHeight: 1.45 }}>
-              Pause purchases before impulse takes over.
-            </p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#93A4BD", margin: 0, lineHeight: 1.45 }}>Pause purchases before impulse takes over.</p>
           </div>
           <span style={{ color: "#51627D", fontSize: 22 }}>›</span>
         </button>
       </div>
 
-      {/* LEARNING */}
+      {/* NEW DYNAMIC LEARNING SECTION */}
       {totalCheckins > 0 && (
-        <section
-          style={{
-            background: "#0F172A",
-            border: "1px solid #1E293B",
-            borderRadius: 26,
-            padding: "18px 18px",
-            marginBottom: 18,
-            boxShadow: "0 14px 30px rgba(0,0,0,0.12)",
-          }}
-        >
+        <section style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 26, padding: "18px 18px", marginBottom: 18, boxShadow: "0 14px 30px rgba(0,0,0,0.12)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", marginBottom: 14 }}>
             <div>
               <p style={sectionLabel}>Learning</p>
-              <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: "#F8FAFC", margin: 0, fontWeight: 700 }}>
-                What the app is learning about you
-              </h2>
+              <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: "#F8FAFC", margin: 0, fontWeight: 700 }}>Your Patterns</h2>
             </div>
-
-            <button
-              onClick={() => setScreen("patterns")}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#818CF8",
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: "pointer",
-                padding: "4px 0",
-                flexShrink: 0,
-              }}
-            >
-              See all
-            </button>
+            <button onClick={() => setScreen("patterns")} style={{ background: "none", border: "none", color: "#818CF8", fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: "4px 0", flexShrink: 0 }}>See all</button>
           </div>
-
+          
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
             <div style={{ background: "#020617", border: "1px solid #1E293B", borderRadius: 18, padding: "14px 10px", textAlign: "center" }}>
               <p style={{ ...sectionLabel, fontSize: 10, letterSpacing: 3, margin: "0 0 10px" }}>Streak</p>
               <p style={{ fontFamily: "'Fraunces', serif", fontSize: 28, color: "#F8FAFC", margin: "0 0 2px" }}>{streak}</p>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#94A3B8", margin: 0 }}>day{streak !== 1 ? "s" : ""}</p>
             </div>
-
             <div style={{ background: "#020617", border: "1px solid #1E293B", borderRadius: 18, padding: "14px 10px", textAlign: "center" }}>
               <p style={{ ...sectionLabel, fontSize: 10, letterSpacing: 3, margin: "0 0 10px" }}>Saved</p>
               <p style={{ fontFamily: "'Fraunces', serif", fontSize: 28, color: "#5EEAD4", margin: "0 0 2px" }}>${savedAmount.toLocaleString()}</p>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#94A3B8", margin: 0 }}>so far</p>
             </div>
-
             <div style={{ background: "#020617", border: "1px solid #1E293B", borderRadius: 18, padding: "14px 10px", textAlign: "center" }}>
-              <p style={{ ...sectionLabel, fontSize: 10, letterSpacing: 3, margin: "0 0 10px" }}>Check-ins</p>
+              <p style={{ ...sectionLabel, fontSize: 10, letterSpacing: 3, margin: "0 0 10px" }}>Logged</p>
               <p style={{ fontFamily: "'Fraunces', serif", fontSize: 28, color: "#F8FAFC", margin: "0 0 2px" }}>{totalCheckins}</p>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#94A3B8", margin: 0 }}>total</p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#94A3B8", margin: 0 }}>days</p>
             </div>
           </div>
 
-          {totalCheckins >= 3 && (
-            <div style={{ background: "#020617", border: "1px solid #1E293B", borderRadius: 20, padding: "16px 14px 14px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", marginBottom: 16 }}>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#F8FAFC", margin: 0, fontWeight: 600 }}>Mode snapshot</p>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#64748B", margin: 0 }}>last {totalCheckins} check-ins</p>
+          {realTalkInsight && (
+            <div style={{ background: realTalkInsight.bg, border: `1px solid ${realTalkInsight.color}40`, borderRadius: 18, padding: "18px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                <span style={{ fontSize: 22 }}>{realTalkInsight.icon}</span>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: realTalkInsight.color, margin: 0, fontWeight: 700 }}>{realTalkInsight.title}</p>
               </div>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: learningInsight ? 16 : 0 }}>
-                {patternData.map(row => (
-                  <div key={row.key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 72, fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#CBD5E1" }}>{row.label}</div>
-                    <div style={{ flex: 1, height: 10, background: "#1E293B", borderRadius: 999, overflow: "hidden" }}>
-                      <div style={{ width: row.pct + "%", height: "100%", background: row.color, borderRadius: 999 }} />
-                    </div>
-                    <div style={{ width: 42, textAlign: "right", fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#94A3B8" }}>{row.pct}%</div>
-                  </div>
-                ))}
-              </div>
-
-              {learningInsight && (
-                <div
-                  style={{
-                    borderRadius: 16,
-                    padding: "14px 14px",
-                    background: learningInsight.tone === "warn"
-                      ? "rgba(251,191,36,0.06)"
-                      : learningInsight.tone === "mixed"
-                      ? "rgba(99,102,241,0.08)"
-                      : "rgba(74,222,128,0.08)",
-                    border: learningInsight.tone === "warn"
-                      ? "1px solid rgba(251,191,36,0.28)"
-                      : learningInsight.tone === "mixed"
-                      ? "1px solid rgba(99,102,241,0.24)"
-                      : "1px solid rgba(74,222,128,0.24)",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: 14,
-                      lineHeight: 1.55,
-                      margin: 0,
-                      color: learningInsight.tone === "warn"
-                        ? "#FDE68A"
-                        : learningInsight.tone === "mixed"
-                        ? "#C7D2FE"
-                        : "#BBF7D0",
-                    }}
-                  >
-                    {learningInsight.text}
-                  </p>
-                </div>
-              )}
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#E2E8F0", margin: 0, lineHeight: 1.5 }}>{realTalkInsight.text}</p>
             </div>
           )}
         </section>
@@ -917,7 +704,6 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
               <h3 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, color: "#F8FAFC", margin: 0, fontWeight: 700 }}>Pending purchase timers</h3>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#64748B", margin: 0 }}>{pendingItems.length} active</p>
             </div>
-
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {pendingItems.map(item => {
                 const remaining = timeRemaining(item.expiry);
@@ -941,51 +727,28 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
       {/* MORE TOOLS */}
       <section style={{ marginBottom: 16 }}>
         <p style={sectionLabel}>More tools</p>
-
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <button onClick={() => setScreen("history")} style={secondaryCard}>
             <span style={{ fontSize: 22, flexShrink: 0 }}>📊</span>
             <div style={{ flex: 1 }}>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>Decision Log</p>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>
-                {spendLog.length} entries · {spendEntries.filter(e => e.decision === "skip").length} delayed · {spendEntries.filter(e => e.decision === "buy").length} decided
-              </p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>{spendLog.length} entries · {spendEntries.filter(e => e.decision === "skip").length} delayed · {spendEntries.filter(e => e.decision === "buy").length} decided</p>
             </div>
             <span style={{ color: "#51627D", fontSize: 20 }}>›</span>
           </button>
-
           <button onClick={() => setScreen("transition")} style={secondaryCard}>
             <span style={{ fontSize: 22, flexShrink: 0 }}>🔄</span>
             <div style={{ flex: 1 }}>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>Change Gears</p>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>
-                Use a short reset when you need to switch states
-              </p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>Use a short reset when you need to switch states</p>
             </div>
             <span style={{ color: "#51627D", fontSize: 20 }}>›</span>
           </button>
-
-          <button
-            onClick={() => setScreen("quicklog")}
-            style={{
-              width: "100%",
-              background: "#0F172A",
-              border: "1px solid #1E293B",
-              borderRadius: 18,
-              padding: "16px 18px",
-              display: "flex",
-              alignItems: "center",
-              gap: 16,
-              cursor: "pointer",
-              textAlign: "left",
-            }}
-          >
+          <button onClick={() => setScreen("quicklog")} style={{ width: "100%", background: "#0F172A", border: "1px solid #1E293B", borderRadius: 18, padding: "16px 18px", display: "flex", alignItems: "center", gap: 16, cursor: "pointer", textAlign: "left" }}>
             <span style={{ fontSize: 22 }}>⚡</span>
             <div style={{ flex: 1 }}>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>Quick Log</p>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>
-                Record a purchase or decision you already made
-              </p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#94A3B8", margin: "4px 0 0" }}>Record a purchase or decision you already made</p>
             </div>
             <span style={{ color: "#51627D", fontSize: 20 }}>›</span>
           </button>
@@ -993,39 +756,8 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
       </section>
 
       {/* UTILITY */}
-      <button
-        onClick={() => setScreen("checkin")}
-        style={{
-          width: "100%",
-          padding: "18px 18px",
-          background: "transparent",
-          border: "1px solid #334155",
-          borderRadius: 20,
-          color: "#CBD5E1",
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: 16,
-          cursor: "pointer",
-          marginBottom: 10,
-        }}
-      >
-        Redo check-in
-      </button>
-
-      <button
-        onClick={onLogout}
-        style={{
-          width: "100%",
-          padding: "8px",
-          background: "transparent",
-          border: "none",
-          color: "#475569",
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: 13,
-          cursor: "pointer",
-        }}
-      >
-        Log out
-      </button>
+      <button onClick={() => setScreen("checkin")} style={{ width: "100%", padding: "18px 18px", background: "transparent", border: "1px solid #334155", borderRadius: 20, color: "#CBD5E1", fontFamily: "'DM Sans', sans-serif", fontSize: 16, cursor: "pointer", marginBottom: 10 }}>Redo check-in</button>
+      <button onClick={onLogout} style={{ width: "100%", padding: "8px", background: "transparent", border: "none", color: "#475569", fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: "pointer" }}>Log out</button>
     </div>
   );
 }
