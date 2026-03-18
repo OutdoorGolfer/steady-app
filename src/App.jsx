@@ -2004,7 +2004,33 @@ export default function App() {
     setCurrentTimerAlert(null);
     setScreen("dashboard");
   };
+  
+  const handleResurrect = async (entry) => {
+    // 1. Instantly update the local state so the tombstone disappears
+    setSpendLog(prev => prev.map(e => {
+      // Find the exact item they clicked on
+      if (e.item === entry.item && e.amount === entry.amount && e.date === entry.date && e.decision === "skip") {
+        return { ...e, decision: "buy" }; // Flip it from skip to buy
+      }
+      return e;
+    }));
 
+    // 2. Tell the Supabase database to dig it up
+    if (session) {
+      try {
+        await supabase
+          .from("spend_entries")
+          .update({ decision: "buy" })
+          .eq("user_id", session.user.id)
+          .eq("item", entry.item)
+          .eq("amount", entry.amount)
+          .eq("decision", "skip");
+      } catch (err) {
+        console.error("Failed to resurrect item:", err);
+      }
+    }
+  };
+  
   const handleSnooze = async (id) => {
     const newExpiry = Date.now() + 24 * 60 * 60 * 1000;
     const currentItem = pendingItems.find(i => i.id === id);
@@ -2047,7 +2073,7 @@ export default function App() {
           {screen === "spend" && <SpendCheck mode={mode} onBack={() => setScreen("dashboard")} onWait={handleWait} onBuyNow={handleBuyNow} />}
           {screen === "quicklog" && <QuickLog onBack={() => setScreen("dashboard")} onLog={handleLogEntry} />}
           {screen === "transition" && <TransitionPicker onBack={() => setScreen("dashboard")} />}
-          {screen === "history" && <Graveyard spendLog={spendLog} onBack={() => setScreen("dashboard")} onResurrect={(item) => console.log("User tried to resurrect:", item)} />}
+          {screen === "history" && <Graveyard spendLog={spendLog} onBack={() => setScreen("dashboard")} onResurrect={handleResurrect} />}
           {screen === "patterns" && <Patterns checkins={checkins} spendLog={spendLog} onBack={() => setScreen("dashboard")} />}
           {screen === "timer-alert" && currentTimerAlert && <TimerAlert item={currentTimerAlert} onResolve={handleTimerResolve} onSnooze={handleSnooze} />}
         </>
