@@ -1484,7 +1484,7 @@ function Graveyard({ spendLog, onBack, onResurrect }) {
                   flexDirection: "column",
                   alignItems: "center",
                   boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.5)",
-                  animation: \`tombstoneDrop 0.5s ease-out \${delay}s both\`,
+                  animation: `tombstoneDrop 0.5s ease-out ${delay}s both`,
                   transition: "transform 0.2s ease",
                 }}
               >
