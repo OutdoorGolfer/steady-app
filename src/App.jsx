@@ -1631,43 +1631,42 @@ function Patterns({ checkins, spendLog, onBack }) {
   );
 }
 
-// ============ TRANSITIONS ============
+// ============ TRANSITIONS (WIZARD FLOW) ============
 
 function TransitionPicker({ onBack }) {
   const [selected, setSelected] = useState(null);
-  const [checked, setChecked] = useState({});
+  const [stepIndex, setStepIndex] = useState(0);
 
   if (selected) {
     const steps = TRANSITIONS[selected];
-    const allDone = steps.every((_, i) => checked[i]);
-    return (
-      <div style={{ minHeight: "100vh", padding: "32px 20px", maxWidth: 480, margin: "0 auto" }}>
-        <h2 style={{ ...screenTitle, textAlign: "left", marginBottom: 8 }}>{selected}</h2>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#64748B", marginBottom: 28 }}>Take 2 minutes. Go through each step.</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {steps.map((s, i) => (
-            <button key={i} onClick={() => setChecked({ ...checked, [i]: !checked[i] })} style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", background: checked[i] ? "#0A2E1A" : "#0F172A", border: checked[i] ? "2px solid #4ADE8040" : "2px solid #1E293B", borderRadius: 14, cursor: "pointer", transition: "all 0.2s ease", width: "100%", textAlign: "left" }}>
-              <div style={{ width: 26, height: 26, borderRadius: 8, border: checked[i] ? "2px solid #4ADE80" : "2px solid #334155", background: checked[i] ? "#4ADE8020" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                {checked[i] && <span style={{ color: "#4ADE80", fontSize: 14 }}>✓</span>}
-              </div>
-              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: checked[i] ? "#4ADE80" : "#E2E8F0", textDecoration: checked[i] ? "line-through" : "none", opacity: checked[i] ? 0.7 : 1 }}>{s}</span>
-            </button>
-          ))}
+    const isDone = stepIndex >= steps.length;
+    
+    if (isDone) {
+      return (
+        <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={confettiContainer}>
+            {["🎉", "✨", "🎯"].map((e, i) => (
+              <span key={i} style={{ ...confettiPiece, left: (30 + i * 20) + "%", animationDelay: (i * 0.1) + "s" }}>{e}</span>
+            ))}
+          </div>
+          <span style={{ fontSize: 64, marginBottom: 20 }}>🎯</span>
+          <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, fontWeight: 500, color: "#4ADE80", textAlign: "center", marginBottom: 12 }}>Transition complete</h2>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, color: "#94A3B8", textAlign: "center", marginBottom: 32 }}>Your brain is officially shifted. Good work.</p>
+          <button onClick={onBack} style={primaryBtn}>Done — back to dashboard →</button>
         </div>
-        {allDone && (
-          <div style={{ background: "#0A2E1A", border: "2px solid #4ADE8030", borderRadius: 16, padding: "20px", marginTop: 24, textAlign: "center" }}>
-            <span style={{ fontSize: 32 }}>🎯</span>
-            <p style={{ fontFamily: "'Fraunces', serif", fontSize: 20, color: "#4ADE80", margin: "8px 0 0" }}>Transition complete</p>
-          </div>
-        )}
-        {allDone ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24 }}>
-            <button onClick={onBack} style={primaryBtn}>Done — back to dashboard →</button>
-            <button onClick={() => { setSelected(null); setChecked({}); }} style={backBtnStyle}>← Pick a different transition</button>
-          </div>
-        ) : (
-          <button onClick={() => { setSelected(null); setChecked({}); }} style={{ ...backBtnStyle, marginTop: 24 }}>← Back to transitions</button>
-        )}
+      );
+    }
+
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#64748B", marginBottom: 12, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 }}>
+          Step {stepIndex + 1} of {steps.length}
+        </p>
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 32, fontWeight: 500, color: "#F1F5F9", textAlign: "center", marginBottom: 40, lineHeight: 1.3, maxWidth: 320 }}>
+          {steps[stepIndex]}
+        </h2>
+        <button onClick={() => setStepIndex(stepIndex + 1)} style={primaryBtn}>Done → Next step</button>
+        <button onClick={() => { setSelected(null); setStepIndex(0); }} style={{ ...backBtnStyle, marginTop: 40 }}>← Pick a different shift</button>
       </div>
     );
   }
