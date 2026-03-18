@@ -501,7 +501,7 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
   const totalCheckins = (checkins || []).length;
   const spendEntries = spendLog.filter(e => e.type === "spend");
   const savedAmount = spendEntries.filter(e => e.decision === "skip").reduce((s, e) => s + (e.amount || 0), 0);
-c const spentAmount = spendEntries.filter(e => e.decision === "buy").reduce((s, e) => s + (e.amount || 0), 0);
+  const spentAmount = spendEntries.filter(e => e.decision === "buy").reduce((s, e) => s + (e.amount || 0), 0);
   const hasReady = readyItems.length > 0;
   const isSurvival = mode === "survival";
   const isLight = mode === "light";
@@ -540,11 +540,11 @@ c const spentAmount = spendEntries.filter(e => e.decision === "buy").reduce((s, 
     } else if (badSleepCount >= 2 && survivalSkipRate !== null && survivalSkipRate < 50) {
        realTalkInsight = { icon: "⚠️", title: "Your Trigger", text: "You are more likely to impulse-buy on days you report Bad Sleep. Keep your wallet out of reach today.", color: "#FBBF24", bg: "#2E2A0A" };
     } else if (savedAmount > spentAmount && savedAmount > 0) {
-   realTalkInsight = { icon: "🛡️", title: "Your Shield", text: `You are beating your impulses. You saved $${savedAmount.toLocaleString()}, which covers the $${spentAmount.toLocaleString()} that slipped through.`, color: "#4ADE80", bg: "#0A2E1A" };
+       realTalkInsight = { icon: "🛡️", title: "Your Shield", text: `You are beating your impulses. You saved $${savedAmount.toLocaleString()}, which covers the $${spentAmount.toLocaleString()} that slipped through.`, color: "#4ADE80", bg: "#0A2E1A" };
     } else if (spentAmount > savedAmount && savedAmount > 0) {
-   realTalkInsight = { icon: "⚠️", title: "Leaky Bucket", text: `Careful. You blocked $${savedAmount.toLocaleString()}, but $${spentAmount.toLocaleString()} still got spent. Let's tighten the gate.`, color: "#FBBF24", bg: "#2E2A0A" };
+       realTalkInsight = { icon: "⚠️", title: "Leaky Bucket", text: `Careful. You blocked $${savedAmount.toLocaleString()}, but $${spentAmount.toLocaleString()} still got spent. Let's tighten the gate.`, color: "#FBBF24", bg: "#2E2A0A" };
     } else if (spentAmount > 0 && savedAmount === 0) {
-   realTalkInsight = { icon: "🛑", title: "Running Hot", text: "Spending is happening with zero blocks. Time to activate survival mode and step away from the wallet.", color: "#F87171", bg: "#2E0A0A" };
+       realTalkInsight = { icon: "🛑", title: "Running Hot", text: "Spending is happening with zero blocks. Time to activate survival mode and step away from the wallet.", color: "#F87171", bg: "#2E0A0A" };
     } else {
        realTalkInsight = { icon: "🧠", title: "Finding Rhythm", text: "You are logging consistently. Keep using the tools and your patterns will continue to clear up.", color: "#818CF8", bg: "#171C4D" };
     }
