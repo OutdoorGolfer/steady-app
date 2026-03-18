@@ -497,20 +497,24 @@ function TimerAlert({ item, onResolve, onSnooze }) {
 // ============ THE HOLLOW TREE (CROW) ============
 
 function HollowTree({ mode, savedAmount, streak, insight }) {
+  const m = MODES[mode];
   const [poked, setPoked] = useState(false);
+
+  // ---> CHANGE HIS NAME HERE IF YOU WANT MORTIMER <---
+  const crowName = "Grimm"; 
 
   // The Crow's stance changes based on your daily capacity
   let crowStance = "scale(1)";
   let crowFilter = "brightness(1)";
-  let modeVibe = "Looking sharp.";
+  let modeVibe = "Standing by.";
   
   if (mode === "survival") {
     crowStance = "scale(1.1) translateY(5px)"; // Puffed up, heavy
     crowFilter = "brightness(0.8) contrast(1.2)"; // Darker, moodier
-    modeVibe = "Bouncer mode active.";
+    modeVibe = "Guarding the gate.";
   } else if (mode === "light") {
     crowStance = "scale(0.95) rotate(-5deg)"; // Leaning, suspicious
-    modeVibe = "Watching your wallet closely.";
+    modeVibe = "Watching closely.";
   }
 
   const handlePoke = () => {
@@ -519,36 +523,48 @@ function HollowTree({ mode, savedAmount, streak, insight }) {
   };
 
   return (
-    <section style={{ background: "#0A0D14", border: "2px solid #1E293B", borderRadius: 26, padding: "24px 20px", marginBottom: 18, position: "relative", overflow: "hidden", boxShadow: "inset 0 10px 30px rgba(0,0,0,0.5)" }}>
+    <section style={{ background: "#0A0D14", border: `2px solid ${m.color}40`, borderRadius: 28, padding: "24px 20px", marginBottom: 18, position: "relative", overflow: "hidden", boxShadow: "inset 0 10px 30px rgba(0,0,0,0.5), 0 18px 36px rgba(0,0,0,0.16)" }}>
       
-      {/* Background tree vibe (subtle circle to represent the hollow) */}
-      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 180, height: 180, background: "#020408", borderRadius: "50%", border: "4px solid #131B2A", zIndex: 0 }}></div>
+      {/* Background tree vibe */}
+      <div style={{ position: "absolute", top: "40%", left: "50%", transform: "translate(-50%, -50%)", width: 220, height: 220, background: "#020408", borderRadius: "50%", border: "4px solid #131B2A", zIndex: 0 }}></div>
+
+      {/* Header Data (Merged from old Hero) */}
+      <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+         <div>
+           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: m.color + "AA", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 4 }}>Today</p>
+           <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 36, lineHeight: 1, fontWeight: 600, color: m.color, margin: 0 }}>{m.label}</h1>
+         </div>
+         <div style={{ textAlign: "right" }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: "#94A3B8", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{crowName} is</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#E2E8F0", margin: 0 }}>{modeVibe}</p>
+         </div>
+      </div>
 
       {/* The Crow & Interaction */}
-      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", marginTop: 10 }}>
         
-        {/* Speech Bubble (Either the Poke or the Insight) */}
-        <div style={{ minHeight: 60, marginBottom: 12, width: "100%", display: "flex", justifyContent: "center" }}>
+        {/* Speech Bubble (Insight, Focus, or Poke) */}
+        <div style={{ minHeight: 60, marginBottom: 16, width: "100%", display: "flex", justifyContent: "center" }}>
           {poked ? (
             <div style={{ background: "#F1F5F9", color: "#020617", padding: "10px 16px", borderRadius: "16px 16px 16px 4px", fontFamily: "'Fraunces', serif", fontSize: 16, fontWeight: 700, border: "2px solid #334155", animation: "pulse 0.3s ease-out" }}>
               "I'm working here. Back off."
             </div>
           ) : insight ? (
-            <div style={{ background: insight.bg, border: `1px solid ${insight.color}40`, padding: "12px 16px", borderRadius: "16px 16px 16px 4px", maxWidth: "90%", boxShadow: "0 8px 16px rgba(0,0,0,0.2)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                <span style={{ fontSize: 16 }}>{insight.icon}</span>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: insight.color, margin: 0, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{insight.title}</p>
-              </div>
+            <div style={{ background: insight.bg, border: `1px solid ${insight.color}40`, padding: "12px 16px", borderRadius: "16px 16px 16px 4px", maxWidth: "95%", boxShadow: "0 8px 16px rgba(0,0,0,0.2)" }}>
               <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#E2E8F0", margin: 0, lineHeight: 1.4 }}>"{insight.text}"</p>
             </div>
-          ) : null}
+          ) : (
+            <div style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, padding: "12px 16px", borderRadius: "16px 16px 16px 4px", maxWidth: "90%" }}>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#B6C0D2", margin: 0, lineHeight: 1.4 }}>"{m.focus}"</p>
+            </div>
+          )}
         </div>
 
         {/* The Bird */}
         <div 
           onClick={handlePoke}
           style={{ 
-            fontSize: 72, 
+            fontSize: 80, 
             cursor: "pointer", 
             transform: crowStance, 
             filter: crowFilter, 
@@ -559,12 +575,10 @@ function HollowTree({ mode, savedAmount, streak, insight }) {
         >
           🐦‍⬛
         </div>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#475569", margin: "8px 0 20px", textTransform: "uppercase", letterSpacing: 1 }}>{modeVibe}</p>
-
       </div>
 
       {/* The Hoard (Your Stats) */}
-      <div style={{ position: "relative", zIndex: 1, display: "flex", gap: 12, justifyContent: "center" }}>
+      <div style={{ position: "relative", zIndex: 1, display: "flex", gap: 12, justifyContent: "center", marginTop: 24 }}>
         <div style={{ background: "rgba(10, 46, 26, 0.7)", border: "1px solid #4ADE8030", borderRadius: 16, padding: "12px 16px", textAlign: "center", flex: 1, backdropFilter: "blur(4px)" }}>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: "#4ADE80", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>The Hoard</p>
           <p style={{ fontFamily: "'Fraunces', serif", fontSize: 24, color: "#4ADE80", margin: 0, textShadow: "0 0 15px rgba(74,222,128,0.3)" }}>${savedAmount.toLocaleString()}</p>
@@ -685,22 +699,8 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
 
   return (
     <div style={{ minHeight: "100vh", padding: "30px 20px 24px", maxWidth: 480, margin: "0 auto" }}>
-      {/* HERO */}
-      <section style={{ background: m.bg, border: "2px solid " + m.color + "30", borderRadius: 28, padding: "22px 20px", marginBottom: 18, boxShadow: "0 18px 36px rgba(0,0,0,0.16)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
-          <div style={{ width: 30, height: 30, borderRadius: 999, background: m.color, boxShadow: `0 0 22px ${m.color}99` }} />
-          <div>
-            <p style={{ ...sectionLabel, margin: "0 0 4px", color: m.color + "AA" }}>Today</p>
-            <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 40, lineHeight: 1, fontWeight: 600, color: m.color, margin: 0 }}>{m.label}</h1>
-          </div>
-        </div>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 17, color: "#D5DFEC", margin: "16px 0 18px", lineHeight: 1.5 }}>{m.desc}</p>
-        <div style={{ background: "rgba(0,0,0,0.10)", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 22, padding: "16px 16px" }}>
-          <p style={{ ...sectionLabel, margin: "0 0 10px", color: "#A8C7B5" }}>Today’s focus</p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: "#F1F5F9", margin: "0 0 16px", lineHeight: 1.55 }}>{m.focus}</p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#98D4B1", margin: 0, lineHeight: 1.45 }}>Best use today: decisions that matter, not decisions you’re avoiding.</p>
-        </div>
-      </section>
+      {/* THE GUARDIAN CROW */}
+      <HollowTree mode={mode} savedAmount={savedAmount} streak={streak} insight={realTalkInsight} />
 
       {/* READY TIMER */}
       {hasReady && (
@@ -743,10 +743,7 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
         </button>
       </div>
 
-    {/* THE HOLLOW TREE (CROW COMPONENT) */}
-      {totalCheckins > 0 && (
-        <HollowTree mode={mode} savedAmount={savedAmount} streak={streak} insight={realTalkInsight} />
-      )}
+    
       
       {/* PENDING TIMERS */}
       {pendingItems.length > 0 && (
