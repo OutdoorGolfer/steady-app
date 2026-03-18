@@ -37,10 +37,38 @@ const MODES = {
   },
 };
 
-const DECISION_QUESTIONS = [
-  { q: "Am I calm or reactive right now?", good: "Calm", bad: "Reactive" },
-  { q: "Have I slept and eaten today?", good: "Yes", bad: "No" },
-  { q: "Am I rushing because of real urgency, or just pressure?", good: "Real deadline", bad: "Just feeling pressure" },
+const DECISION_TYPES = [
+  { id: "commit", icon: "🗣️", label: "Saying 'Yes' to a new commitment" },
+  { id: "quit", icon: "🛑", label: "Quitting or backing out of something" },
+  { id: "message", icon: "🔥", label: "Sending an emotional message" },
+  { id: "life", icon: "🔄", label: "A major life change (move, job, etc.)" },
+  { id: "money", icon: "💸", label: "A big financial move" },
+  { id: "custom", icon: "✍️", label: "Let me type it out..." },
+];
+
+const GROUNDING_QUESTIONS = [
+  {
+    q: "How fast is your brain moving right now?",
+    options: [
+      { label: "Normal walking pace (I've been chewing on this)", flags: 0, color: "#4ADE80", bg: "#0A2E1A" },
+      { label: "100 miles per hour (I need this resolved *now*)", flags: 1, color: "#F87171", bg: "#2E0A0A" }
+    ]
+  },
+  {
+    q: "Is your body physically taken care of right now?",
+    options: [
+      { label: "Yes, I'm fed, rested, and comfortable", flags: 0, color: "#4ADE80", bg: "#0A2E1A" },
+      { label: "Honestly? I'm running on empty or overstimulated", flags: 1, color: "#F87171", bg: "#2E0A0A" }
+    ]
+  },
+  {
+    q: "What actually happens if you don't decide this until tomorrow?",
+    options: [
+      { label: "Actual disaster (missed hard deadline, safety)", flags: 0, color: "#4ADE80", bg: "#0A2E1A" },
+      { label: "Someone might get annoyed with me", flags: 1, color: "#FBBF24", bg: "#2E2A0A" },
+      { label: "Nothing real, I just want the pressure out of my head", flags: 1, color: "#F87171", bg: "#2E0A0A" }
+    ]
+  }
 ];
 
 const TRANSITIONS = {
@@ -1002,120 +1030,199 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
   );
 }
 
-// ============ DECISION GATE ============
+// ============ REBUILT DECISION GATE ============
 
 function DecisionGate({ mode, onBack, onLog }) {
-  const [decisionText, setDecisionText] = useState("");
-  const [started, setStarted] = useState(false);
+  const [phase, setPhase] = useState("select_type"); // select_type, custom_input, grounding, questions, result
+  const [decisionLabel, setDecisionLabel] = useState("");
   const [step, setStep] = useState(0);
   const [flags, setFlags] = useState(0);
   const [answerHistory, setAnswerHistory] = useState([]);
-  const [finalFlags, setFinalFlags] = useState(null);
-  const [done, setDone] = useState(false);
-  const [nextAction] = useState(() => ({ stop: randomFrom(NEXT_ACTIONS_STOP), go: randomFrom(NEXT_ACTIONS_GO) }));
 
-  if (!started) {
+  // PHASE 1: Categorize (Kill the Keyboard)
+  if (phase === "select_type") {
     return (
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
         {mode === "survival" && (
           <div style={{ background: "#2E0A0A", border: "1px solid #F8717140", borderRadius: 12, padding: "10px 16px", marginBottom: 28 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#F87171", margin: 0 }}>🔴 You're in Survival mode — the bar is higher today</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#F87171", margin: 0 }}>🔴 Survival mode — keep it simple today</p>
           </div>
         )}
-        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 500, color: "#F1F5F9", textAlign: "center", marginBottom: 12, maxWidth: 340, lineHeight: 1.4 }}>
-          What decision are you weighing?
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 500, color: "#F1F5F9", textAlign: "center", marginBottom: 24, maxWidth: 340, lineHeight: 1.4 }}>
+          What kind of decision is this?
         </h2>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#64748B", textAlign: "center", maxWidth: 300, lineHeight: 1.5, marginBottom: 24 }}>
-          Writing it out helps. Be specific.
-        </p>
-        <textarea
-          value={decisionText}
-          onChange={e => setDecisionText(e.target.value)}
-          placeholder="e.g. Should I quit my job? Should I have that difficult conversation? Should I commit to this move?"
-          style={{ width: "100%", maxWidth: 340, minHeight: 120, padding: "16px 20px", background: "#0F172A", border: "2px solid #1E293B", borderRadius: 14, color: "#F1F5F9", fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", resize: "vertical", lineHeight: 1.5 }}
-          autoFocus
-        />
-        <button onClick={() => setStarted(true)} disabled={!decisionText.trim()} style={{ ...primaryBtn, marginTop: 20, opacity: decisionText.trim() ? 1 : 0.4 }}>
-          Check if I should decide now →
-        </button>
-        <button onClick={onBack} style={{ ...backBtnStyle, marginTop: 16 }}>← Cancel</button>
+        
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", maxWidth: 320 }}>
+          {DECISION_TYPES.map(type => (
+            <button
+              key={type.id}
+              onClick={() => {
+                if (type.id === "custom") {
+                  setPhase("custom_input");
+                } else {
+                  setDecisionLabel(type.label);
+                  setPhase("grounding");
+                }
+              }}
+              style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 20px", background: "#0F172A", border: "2px solid #1E293B", borderRadius: 16, cursor: "pointer", textAlign: "left" }}
+            >
+              <span style={{ fontSize: 24 }}>{type.icon}</span>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#E2E8F0", fontWeight: 500 }}>{type.label}</span>
+            </button>
+          ))}
+        </div>
+        <button onClick={onBack} style={{ ...backBtnStyle, marginTop: 24 }}>← Cancel</button>
       </div>
     );
   }
 
-  const handleAnswer = (isBad) => {
-    const nf = flags + (isBad ? 1 : 0);
-    setFlags(nf);
-    setAnswerHistory([...answerHistory, isBad ? 1 : 0]);
-    if (step < DECISION_QUESTIONS.length - 1) setTimeout(() => setStep(step + 1), 300);
-    else {
-      setFinalFlags(nf);
-      setTimeout(() => setDone(true), 300);
-    }
-  };
+  // PHASE 1.5: Optional Custom Input
+  if (phase === "custom_input") {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 500, color: "#F1F5F9", textAlign: "center", marginBottom: 16 }}>Write it out</h2>
+        <textarea
+          value={decisionLabel}
+          onChange={e => setDecisionLabel(e.target.value)}
+          placeholder="Briefly describe the decision..."
+          style={{ width: "100%", maxWidth: 320, minHeight: 120, padding: "16px 20px", background: "#0F172A", border: "2px solid #1E293B", borderRadius: 14, color: "#F1F5F9", fontSize: 15, fontFamily: "'DM Sans', sans-serif", outline: "none", resize: "vertical" }}
+          autoFocus
+        />
+        <button onClick={() => setPhase("grounding")} disabled={!decisionLabel.trim()} style={{ ...primaryBtn, marginTop: 20, opacity: decisionLabel.trim() ? 1 : 0.4 }}>
+          Next →
+        </button>
+        <button onClick={() => setPhase("select_type")} style={{ ...backBtnStyle, marginTop: 16 }}>← Back</button>
+      </div>
+    );
+  }
 
-  const handleGateBack = () => {
-    if (step > 0) {
-      const prevValue = answerHistory[answerHistory.length - 1] || 0;
-      setFlags(flags - prevValue);
-      setAnswerHistory(answerHistory.slice(0, -1));
-      setStep(step - 1);
-    } else setStarted(false);
-  };
+  // PHASE 2: The Physical Grounding (The Interrupt)
+  if (phase === "grounding") {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 500, color: "#F1F5F9", textAlign: "center", marginBottom: 32, maxWidth: 340, lineHeight: 1.4 }}>
+          Okay. Before we look at this decision, do me a favor:
+        </h2>
+        
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%", maxWidth: 300, marginBottom: 40 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span style={{ fontSize: 24 }}>🧘</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: "#E2E8F0" }}>Drop your shoulders.</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span style={{ fontSize: 24 }}>😌</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: "#E2E8F0" }}>Unclench your jaw.</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <span style={{ fontSize: 24 }}>😮‍💨</span>
+            <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: "#E2E8F0" }}>Take one slow breath.</span>
+          </div>
+        </div>
 
-  const modeFlag = mode === "survival" ? 1 : mode === "light" ? 0.5 : 0;
-  const totalRisk = (finalFlags !== null ? finalFlags : flags) + modeFlag;
+        <button onClick={() => setPhase("questions")} style={primaryBtn}>
+          Done. Let's look at the decision →
+        </button>
+        <button onClick={() => setPhase("select_type")} style={{ ...backBtnStyle, marginTop: 16 }}>← Back</button>
+      </div>
+    );
+  }
 
-  if (done) {
+  // PHASE 3: Reality Checks
+  if (phase === "questions") {
+    const handleAnswer = (flagValue) => {
+      const newFlags = flags + flagValue;
+      setFlags(newFlags);
+      setAnswerHistory([...answerHistory, flagValue]);
+      
+      if (step < GROUNDING_QUESTIONS.length - 1) {
+        setTimeout(() => setStep(step + 1), 250);
+      } else {
+        setTimeout(() => setPhase("result"), 250);
+      }
+    };
+
+    const handleGateBack = () => {
+      if (step > 0) {
+        const prevValue = answerHistory[answerHistory.length - 1] || 0;
+        setFlags(flags - prevValue);
+        setAnswerHistory(answerHistory.slice(0, -1));
+        setStep(step - 1);
+      } else {
+        setPhase("grounding");
+      }
+    };
+
+    const current = GROUNDING_QUESTIONS[step];
+    
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
+        <div style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 10, padding: "8px 14px", marginBottom: 28, maxWidth: 320 }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#64748B", margin: 0 }}>
+            Deciding: <span style={{ color: "#94A3B8" }}>{decisionLabel.length > 35 ? decisionLabel.substring(0, 35) + "..." : decisionLabel}</span>
+          </p>
+        </div>
+
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 500, color: "#F1F5F9", textAlign: "center", marginBottom: 36, maxWidth: 340, lineHeight: 1.4 }}>
+          {current.q}
+        </h2>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14, width: "100%", maxWidth: 320 }}>
+          {current.options.map((opt, i) => (
+            <button 
+              key={i} 
+              onClick={() => handleAnswer(opt.flags)} 
+              style={gateBtn(opt.bg, opt.color)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <button onClick={handleGateBack} style={{ ...backBtnStyle, marginTop: 40 }}>← Back</button>
+      </div>
+    );
+  }
+
+  // PHASE 4: Permission Output
+  if (phase === "result") {
+    // Determine risk based on answers + today's mode
+    const modeFlag = mode === "survival" ? 1 : mode === "light" ? 0.5 : 0;
+    const totalRisk = flags + modeFlag;
+    
+    // If risk is high, it's a stop. If risk is low, they are clear.
     const safe = totalRisk <= 1;
+
     return (
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <span style={{ fontSize: 64, marginBottom: 20 }}>{safe ? "✅" : "🛑"}</span>
-        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, fontWeight: 500, color: safe ? "#4ADE80" : "#F87171", textAlign: "center", marginBottom: 12 }}>
-          {safe ? "OK to decide" : "Not the right time"}
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, fontWeight: 500, color: safe ? "#4ADE80" : "#FBBF24", textAlign: "center", marginBottom: 12 }}>
+          {safe ? "Clear to proceed" : "Give yourself 24 hours"}
         </h2>
+        
         <div style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 12, padding: "12px 16px", marginBottom: 16, maxWidth: 320 }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#94A3B8", margin: 0, fontStyle: "italic" }}>"{decisionText}"</p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#94A3B8", margin: 0, fontStyle: "italic" }}>"{decisionLabel}"</p>
         </div>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#94A3B8", textAlign: "center", maxWidth: 320, lineHeight: 1.6, marginBottom: 16 }}>
-          {safe ? "You're in a reasonable headspace. Go ahead — but take it slow." : "This decision will still be there when you're in a better place to think it through."}
+        
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#94A3B8", textAlign: "center", maxWidth: 320, lineHeight: 1.6, marginBottom: 24 }}>
+          {safe 
+            ? "You're in a solid headspace. You can trust your judgment on this right now. Take your time, and make the call." 
+            : "Your brain is spinning or your tank is empty. The smartest choice you can make right now is to put this in a box until tomorrow. You are officially off the hook for making this call today."}
         </p>
-        <div style={{ background: safe ? "#0A2E1A" : "#1E1A2E", border: safe ? "1px solid #4ADE8030" : "1px solid #6366F130", borderRadius: 14, padding: "16px 18px", maxWidth: 320, marginBottom: 32 }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: safe ? "#4ADE80" : "#A5B4FC", margin: "0 0 6px", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>
-            Next step
-          </p>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#E2E8F0", margin: 0, lineHeight: 1.5 }}>
-            {safe ? nextAction.go : nextAction.stop}
-          </p>
-        </div>
-        <button onClick={() => { onLog({ type: "decision", item: decisionText, decision: safe ? "go" : "stop", flags: finalFlags }); onBack(); }} style={backBtnStyle}>
-          ← Back to dashboard
+
+        <button 
+          onClick={() => { 
+            onLog({ type: "decision", item: decisionLabel, decision: safe ? "go" : "stop", flags: flags }); 
+            onBack(); 
+          }} 
+          style={primaryBtn}
+        >
+          {safe ? "Got it →" : "Save this for tomorrow →"}
         </button>
       </div>
     );
   }
 
-  const current = DECISION_QUESTIONS[step];
-  return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <div style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 10, padding: "8px 14px", marginBottom: 28, maxWidth: 320 }}>
-        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#64748B", margin: 0 }}>
-          Deciding: <span style={{ color: "#94A3B8" }}>{decisionText.length > 40 ? decisionText.substring(0, 40) + "..." : decisionText}</span>
-        </p>
-      </div>
-
-      <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 500, color: "#F1F5F9", textAlign: "center", marginBottom: 36, maxWidth: 340, lineHeight: 1.4 }}>
-        {current.q}
-      </h2>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, width: "100%", maxWidth: 300 }}>
-        <button onClick={() => handleAnswer(false)} style={gateBtn("#0A2E1A", "#4ADE80")}>{current.good}</button>
-        <button onClick={() => handleAnswer(true)} style={gateBtn("#2E0A0A", "#F87171")}>{current.bad}</button>
-      </div>
-
-      <button onClick={handleGateBack} style={{ ...backBtnStyle, marginTop: 40 }}>{step > 0 ? "← Back" : "← Edit decision"}</button>
-    </div>
-  );
+  return null;
 }
 
 // ============ SPEND CHECK ============
