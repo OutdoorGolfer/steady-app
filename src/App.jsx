@@ -12,25 +12,25 @@ const supabase = createClient(
 
 const MODES = {
   full: {
-    label: "Full Day",
+    label: "You're clear",
     color: "#4ADE80",
     bg: "#0A2E1A",
     emoji: "🟢",
-    desc: "You're in good shape. Make the most of today.",
+    desc: "Good day for normal decisions.",
   },
   light: {
-    label: "Light Day",
+    label: "Be careful",
     color: "#FBBF24",
     bg: "#2E2A0A",
     emoji: "🟡",
-    desc: "Tools are available, but pay extra attention to warnings.",
+    desc: "Slow down today.",
   },
   survival: {
-    label: "Survival Day",
+    label: "Not a good day",
     color: "#F87171",
     bg: "#2E0A0A",
     emoji: "🔴",
-    desc: "Protect yourself. No big decisions today.",
+    desc: "Avoid big choices if you can.",
   },
 };
 
@@ -106,10 +106,10 @@ function AuthScreen({ onAuth, onLegal }) {
       </div>
       <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 34, fontWeight: 600, color: "#F1F5F9", textAlign: "center", marginBottom: 12 }}>Decision Gate</h1>
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, color: "#E2E8F0", textAlign: "center", maxWidth: 320, lineHeight: 1.6, marginBottom: 8 }}>
-        Pause risky purchases before impulse takes over.
+        Stop yourself before you spend money you'll regret.
       </p>
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#64748B", textAlign: "center", maxWidth: 300, lineHeight: 1.5, marginBottom: 28 }}>
-        {isSignUp ? "Create a free account to start protecting your wallet." : "Welcome back. Log in to pick up where you left off."}
+        {isSignUp ? "Create a free account to get started." : "Welcome back. Log in to pick up where you left off."}
       </p>
       {error && (
         <div style={{ background: "#2E0A0A", border: "1px solid #F8717140", borderRadius: 12, padding: "10px 16px", marginBottom: 20, maxWidth: 320, width: "100%" }}>
@@ -241,10 +241,10 @@ function SplashScreen({ onContinue }) {
       </div>
       <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 34, fontWeight: 600, color: "#F1F5F9", textAlign: "center", marginBottom: 16 }}>Decision Gate</h1>
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: "#E2E8F0", textAlign: "center", maxWidth: 340, lineHeight: 1.6, marginBottom: 12 }}>
-        Pause risky purchases when you can't trust your state.
+        Stop yourself before you spend money you'll regret.
       </p>
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#64748B", textAlign: "center", maxWidth: 320, lineHeight: 1.6, marginBottom: 40 }}>
-        A 30-second daily check-in tells you how much to trust yourself today. Then the app helps you pause before you spend.
+        Answer 4 quick questions about how you're feeling. Then the app helps you wait before buying things you don't need.
       </p>
       <button onClick={onContinue} style={{ padding: "18px 48px", background: "#6366F1", border: "none", borderRadius: 16, color: "#fff", fontSize: 17, fontFamily: "'DM Sans', sans-serif", fontWeight: 600, cursor: "pointer", width: "100%", maxWidth: 320 }}>
         Start check-in →
@@ -356,10 +356,10 @@ function TimerAlert({ item, onResolve, onSnooze }) {
         )}
         <span style={{ fontSize: 64, marginBottom: 20 }}>{skipped ? "🛡️" : "👍"}</span>
         <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, fontWeight: 500, color: skipped ? "#4ADE80" : "#FBBF24", textAlign: "center", marginBottom: 12 }}>
-          {skipped ? "$" + item.amount.toLocaleString() + " saved!" : "Nice — that's a thoughtful purchase"}
+          {skipped ? "You saved $" + item.amount.toLocaleString() : "You decided to buy it"}
         </h2>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, color: "#94A3B8", textAlign: "center", maxWidth: 320, lineHeight: 1.6, marginBottom: 32 }}>
-          {skipped ? "You waited, the urge passed, and you kept your money." : "You waited, thought it through, and decided it's worth it. That's the whole point."}
+          {skipped ? "You waited, and it turned out you didn't need it." : "You waited, thought about it, and decided it was worth it."}
         </p>
         <button onClick={() => onResolve(item.id, resolved)} style={primaryBtn}>Back to dashboard →</button>
       </div>
@@ -374,11 +374,11 @@ function TimerAlert({ item, onResolve, onSnooze }) {
       </h2>
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, color: "#94A3B8", textAlign: "center", marginBottom: 6 }}>{item.item}</p>
       <p style={{ fontFamily: "'Fraunces', serif", fontSize: 32, color: "#F1F5F9", textAlign: "center", marginBottom: 8 }}>${item.amount.toLocaleString()}</p>
-      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#64748B", textAlign: "center", marginBottom: 36 }}>You logged this {item.waitHours} hours ago. Still want it?</p>
+      <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#64748B", textAlign: "center", marginBottom: 36 }}>You waited {item.waitHours} hours. Do you still want it?</p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14, width: "100%", maxWidth: 300 }}>
-        <button onClick={() => setResolved("skip")} style={gateBtn("#0A2E1A", "#4ADE80")}>Skip it — save ${item.amount.toLocaleString()}</button>
-        <button onClick={() => setResolved("buy")} style={gateBtn("#1E293B", "#94A3B8")}>Buy it — I've thought it through</button>
+        <button onClick={() => setResolved("skip")} style={gateBtn("#0A2E1A", "#4ADE80")}>I don't need it — save ${item.amount.toLocaleString()}</button>
+        <button onClick={() => setResolved("buy")} style={gateBtn("#1E293B", "#94A3B8")}>I still want it — buy it</button>
         <button onClick={() => onSnooze(item.id)} style={{ padding: "16px 24px", background: "transparent", border: "1px solid #334155", borderRadius: 16, color: "#94A3B8", fontSize: 15, fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: "pointer", width: "100%", textAlign: "center" }}>
           Still not sure — add 24 more hours
         </button>
@@ -396,14 +396,14 @@ const GRIMM_IMAGES = {
 };
 
 const GRIMM_LINES = [
-  "Pause first.",
-  "Eyes open.",
-  "Careful.",
-  "Working.",
-  "Keep the gate tight.",
-  "Still leaking.",
-  "That can wait.",
-  "Good kill.",
+  "Slow down.",
+  "This can wait.",
+  "You don't need to decide right now.",
+  "You usually feel better when you wait.",
+  "Good day to be careful.",
+  "Sleep on it.",
+  "Check in with yourself first.",
+  "Nice save.",
 ];
 
 function GrimmCompanion({ mode }) {
@@ -499,15 +499,15 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
     const abandonRate = totalPurchases > 0 ? Math.round((skippedPurchases / totalPurchases) * 100) : null;
 
     if (survivalCount >= 4) {
-      insight = { text: "You've had " + survivalCount + " Survival days recently. Keep purchases small today.", color: "#F87171", bg: "#2E0A0A" };
+      insight = { text: "You've had " + survivalCount + " tough days recently. Try to keep purchases small today.", color: "#F87171", bg: "#2E0A0A" };
     } else if (survivalSkipRate !== null && survivalSkipRate < 50) {
-      insight = { text: "You buy faster on Survival days. The gate matters most when you're low.", color: "#FBBF24", bg: "#2E2A0A" };
+      insight = { text: "You tend to buy more on bad days. Waiting helps the most when you're low.", color: "#FBBF24", bg: "#2E2A0A" };
     } else if (abandonRate !== null && abandonRate >= 60) {
-      insight = { text: "You rarely regret waiting. " + abandonRate + "% of paused purchases stayed buried.", color: "#4ADE80", bg: "#0A2E1A" };
+      insight = { text: "You usually don't regret waiting. " + abandonRate + "% of paused purchases you decided to skip.", color: "#4ADE80", bg: "#0A2E1A" };
     } else if (savedAmount > spentAmount && savedAmount > 0) {
-      insight = { text: "You're beating your impulses. $" + savedAmount.toLocaleString() + " protected so far.", color: "#4ADE80", bg: "#0A2E1A" };
+      insight = { text: "Waiting is working. You've saved $" + savedAmount.toLocaleString() + " by pausing first.", color: "#4ADE80", bg: "#0A2E1A" };
     } else if (spentAmount > 0 && savedAmount === 0) {
-      insight = { text: "Spending with zero blocks. Try pausing the next one.", color: "#F87171", bg: "#2E0A0A" };
+      insight = { text: "You haven't paused a purchase yet. Try it next time you're about to buy something.", color: "#F87171", bg: "#2E0A0A" };
     }
   }
 
@@ -520,12 +520,13 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
           <div>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: m.color + "AA", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 3 }}>Today</p>
             <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, lineHeight: 1.1, fontWeight: 600, color: m.color, margin: 0 }}>{m.label}</h1>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#94A3B8", margin: "6px 0 0" }}>{m.desc}</p>
           </div>
           <GrimmCompanion mode={mode} />
         </div>
 
         <div style={{ background: "rgba(10, 46, 26, 0.5)", border: "1px solid #4ADE8025", borderRadius: 14, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#4ADE80", margin: 0, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5 }}>The Hoard</p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#4ADE80", margin: 0, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5 }}>Money you saved</p>
           <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, color: "#4ADE80", margin: 0, textShadow: "0 0 12px rgba(74,222,128,0.2)" }}>${savedAmount.toLocaleString()}</p>
         </div>
       </section>
@@ -535,8 +536,8 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
         <section style={{ background: "#11133A", border: "1px solid #3B3FD9", borderRadius: 20, padding: "16px 16px", marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#F1F5F9", margin: 0, fontWeight: 700 }}>{readyItems.length} timer{readyItems.length > 1 ? "s" : ""} ready</p>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#8F95F6", margin: "4px 0 0" }}>Review what you paused.</p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#F1F5F9", margin: 0, fontWeight: 700 }}>Time's up on {readyItems.length} purchase{readyItems.length > 1 ? "s" : ""}</p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#8F95F6", margin: "4px 0 0" }}>Do you still want {readyItems.length > 1 ? "them" : "it"}?</p>
             </div>
             <button onClick={() => setScreen("timer-alert")} style={{ background: "#6366F1", border: "none", borderRadius: 14, color: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 700, padding: "12px 16px", cursor: "pointer", flexShrink: 0 }}>Review</button>
           </div>
@@ -562,9 +563,9 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
           <span style={{ fontSize: 26 }}>⏸️</span>
         </div>
         <div style={{ flex: 1 }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>Pause a Purchase</p>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 18, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>Thinking about buying something?</p>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "#93A4BD", margin: "4px 0 0", lineHeight: 1.4 }}>
-            {isSurvival ? "Survival mode — you should pause this." : "Interrupt the impulse. Set a timer."}
+            {isSurvival ? "Today's not a good day to spend. Let's slow it down." : "Wait before you spend. We'll help you slow it down."}
           </p>
         </div>
         <span style={{ color: "#51627D", fontSize: 22 }}>›</span>
@@ -574,7 +575,7 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
       {pendingItems.length > 0 && (
         <section style={{ marginBottom: 14 }}>
           <div style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 18, padding: "14px 14px" }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#64748B", margin: "0 0 10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 2 }}>Waiting on</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#64748B", margin: "0 0 10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 2 }}>Purchases you're waiting on</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {pendingItems.map(item => {
                 const remaining = timeRemaining(item.expiry);
@@ -618,9 +619,9 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
         }}>
           <span style={{ fontSize: 20, flexShrink: 0 }}>🪦</span>
           <div style={{ flex: 1 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>The Graveyard</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, fontWeight: 700, color: "#F8FAFC", margin: 0 }}>What you didn't buy</p>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#94A3B8", margin: "2px 0 0" }}>
-              {spendEntries.filter(e => e.decision === "skip").length} impulses buried · ${savedAmount.toLocaleString()} saved
+              {spendEntries.filter(e => e.decision === "skip").length} purchases skipped · ${savedAmount.toLocaleString()} saved
             </p>
           </div>
           <span style={{ color: "#51627D", fontSize: 18 }}>›</span>
@@ -641,14 +642,14 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
         }}>
           <span style={{ fontSize: 20, flexShrink: 0 }}>⚡</span>
           <div style={{ flex: 1 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#94A3B8", margin: 0 }}>Quick log a past purchase</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#94A3B8", margin: 0 }}>Log something you already bought or skipped</p>
           </div>
           <span style={{ color: "#51627D", fontSize: 18 }}>›</span>
         </button>
       </section>
 
       {/* UTILITY */}
-      <button onClick={() => setScreen("checkin")} style={{ width: "100%", padding: "14px", background: "transparent", border: "1px solid #334155", borderRadius: 16, color: "#CBD5E1", fontFamily: "'DM Sans', sans-serif", fontSize: 14, cursor: "pointer", marginBottom: 8 }}>Redo check-in</button>
+      <button onClick={() => setScreen("checkin")} style={{ width: "100%", padding: "14px", background: "transparent", border: "1px solid #334155", borderRadius: 16, color: "#CBD5E1", fontFamily: "'DM Sans', sans-serif", fontSize: 14, cursor: "pointer", marginBottom: 8 }}>Check in again</button>
       <button onClick={onLogout} style={{ width: "100%", padding: "8px", background: "transparent", border: "none", color: "#475569", fontFamily: "'DM Sans', sans-serif", fontSize: 13, cursor: "pointer" }}>Log out</button>
     </div>
   );
@@ -668,7 +669,7 @@ function SpendCheck({ mode, onBack, onWait, onBuyNow }) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <span style={{ fontSize: 64, marginBottom: 20 }}>⏳</span>
-        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 500, color: "#6366F1", textAlign: "center", marginBottom: 12 }}>Timer set — {waitHours} hours</h2>
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 500, color: "#6366F1", textAlign: "center", marginBottom: 12 }}>We'll check back in {waitHours} hours</h2>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, color: "#94A3B8", textAlign: "center", maxWidth: 320, lineHeight: 1.6, marginBottom: 8 }}>
           We'll check back on <strong style={{ color: "#E2E8F0" }}>{item}</strong> (${parseFloat(amount).toLocaleString()}) when your timer is up.
         </p>
@@ -684,9 +685,9 @@ function SpendCheck({ mode, onBack, onWait, onBuyNow }) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
         <span style={{ fontSize: 64, marginBottom: 20 }}>👍</span>
-        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 500, color: "#FBBF24", textAlign: "center", marginBottom: 12 }}>Logged — you decided to buy now</h2>
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 500, color: "#FBBF24", textAlign: "center", marginBottom: 12 }}>Got it — purchase logged</h2>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#94A3B8", textAlign: "center", maxWidth: 300, lineHeight: 1.5, marginBottom: 32 }}>
-          It's logged so you can see patterns over time.
+          We'll track it so you can see your spending patterns over time.
         </p>
         <button onClick={onBack} style={backBtnStyle}>← Back to dashboard</button>
       </div>
@@ -702,9 +703,9 @@ function SpendCheck({ mode, onBack, onWait, onBuyNow }) {
           ))}
         </div>
         <span style={{ fontSize: 64, marginBottom: 20 }}>🛡️</span>
-        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 500, color: "#4ADE80", textAlign: "center", marginBottom: 12 }}>${parseFloat(amount).toLocaleString()} saved!</h2>
+        <h2 style={{ fontFamily: "'Fraunces', serif", fontSize: 26, fontWeight: 500, color: "#4ADE80", textAlign: "center", marginBottom: 12 }}>You saved ${parseFloat(amount).toLocaleString()}</h2>
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, color: "#94A3B8", textAlign: "center", maxWidth: 320, lineHeight: 1.6, marginBottom: 32 }}>
-          You thought it through and realized you don't need it. That's a win.
+          You decided you don't need it. That money stays in your pocket.
         </p>
         <button onClick={onBack} style={primaryBtn}>Back to dashboard →</button>
       </div>
@@ -716,7 +717,7 @@ function SpendCheck({ mode, onBack, onWait, onBuyNow }) {
       <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
         {mode === "survival" && (
           <div style={{ background: "#2E0A0A", border: "1px solid #F8717140", borderRadius: 12, padding: "12px 16px", marginBottom: 28, maxWidth: 340 }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#F87171", margin: 0, textAlign: "center" }}>🔴 Survival mode — impulse spending is more likely right now. Take it slow.</p>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#F87171", margin: 0, textAlign: "center" }}>🔴 You're not in a good state today. Be extra careful with spending.</p>
           </div>
         )}
         <h2 style={screenTitle}>What are you thinking of buying?</h2>
@@ -757,7 +758,7 @@ function SpendCheck({ mode, onBack, onWait, onBuyNow }) {
         {shouldWarn && (
           <div style={{ background: "#2E2A0A", border: "1px solid #FBBF2440", borderRadius: 12, padding: "12px 16px", marginBottom: 24, maxWidth: 340 }}>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#FBBF24", margin: 0, textAlign: "center" }}>
-              {mode === "survival" ? "⚠️ Survival mode — strongly recommend waiting." : needWant === "want" ? "⚠️ This is a want. A timer helps you decide with a clear head." : "⚠️ $" + parseFloat(amount).toLocaleString() + " is a big purchase. Give yourself time."}
+              {mode === "survival" ? "⚠️ You're not in a good state today. We recommend waiting." : needWant === "want" ? "⚠️ This is a want, not a need. Waiting helps you decide with a clear head." : "⚠️ $" + parseFloat(amount).toLocaleString() + " is a lot of money. Give yourself time."}
             </p>
           </div>
         )}
@@ -824,9 +825,9 @@ function QuickLog({ onBack, onLog }) {
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24 }}>
-      <h2 style={screenTitle}>Quick log</h2>
+      <h2 style={screenTitle}>Log a purchase</h2>
       <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#64748B", textAlign: "center", maxWidth: 300, marginBottom: 24 }}>
-        Record a purchase you already decided on.
+        Record something you already bought or decided not to buy.
       </p>
       <input type="text" value={item} onChange={e => setItem(e.target.value)} placeholder="What was it?" style={inputStyle} autoFocus />
       <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="How much? ($)" style={{ ...inputStyle, marginTop: 12 }} />
@@ -858,7 +859,7 @@ function Graveyard({ spendLog, onBack, onResurrect }) {
       <div style={{ textAlign: "center", marginBottom: 40 }}>
         <span style={{ fontSize: 40, display: "block", marginBottom: 8 }}>🪦</span>
         <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#64748B", textTransform: "uppercase", letterSpacing: 2, fontWeight: 700, margin: "0 0 8px" }}>
-          Total Value Buried
+          Total money you kept
         </h2>
         <p style={{ fontFamily: "'Fraunces', serif", fontSize: 48, color: "#4ADE80", margin: 0, fontWeight: 600, textShadow: "0 0 20px rgba(74,222,128,0.2)" }}>
           ${totalBuried.toLocaleString()}
@@ -867,7 +868,7 @@ function Graveyard({ spendLog, onBack, onResurrect }) {
 
       {buriedItems.length === 0 ? (
         <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#475569", textAlign: "center", marginTop: 40 }}>
-          The graveyard is empty. Pause a purchase to fill these plots.
+          Nothing here yet. When you skip a purchase, it shows up here.
         </p>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -911,7 +912,7 @@ function Graveyard({ spendLog, onBack, onResurrect }) {
       )}
 
       <button onClick={onBack} style={{ width: "100%", padding: "16px", background: "transparent", border: "1px solid #1E293B", borderRadius: 12, color: "#64748B", fontSize: 15, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", marginTop: 40, marginBottom: 32 }}>
-        ← Leave the graveyard
+        ← Back to dashboard
       </button>
 
       {resurrectTarget && (
@@ -919,15 +920,15 @@ function Graveyard({ spendLog, onBack, onResurrect }) {
           <div style={{ background: "#0F172A", border: "1px solid #334155", borderRadius: 24, padding: "32px 24px", width: "100%", maxWidth: 340, textAlign: "center", boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.7)" }}>
             <span style={{ fontSize: 48, display: "block", marginBottom: 16 }}>🧟</span>
             <h3 style={{ fontFamily: "'Fraunces', serif", fontSize: 24, color: "#F1F5F9", margin: "0 0 12px", lineHeight: 1.3 }}>
-              Hold up. Are you trying to resurrect this?
+              Are you sure you want to buy this now?
             </h3>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: "#94A3B8", margin: "0 0 32px", lineHeight: 1.5 }}>
-              You managed to keep this <strong style={{ color: "#F1F5F9" }}>${(resurrectTarget.amount || 0).toLocaleString()}</strong> impulse in the ground. You already won this battle. Let it rest.
+              You already decided not to spend <strong style={{ color: "#F1F5F9" }}>${(resurrectTarget.amount || 0).toLocaleString()}</strong> on this. That was a good call.
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <button onClick={() => setResurrectTarget(null)} style={{ padding: "18px", background: "#4ADE80", border: "none", borderRadius: 16, color: "#020617", fontSize: 16, fontFamily: "'DM Sans', sans-serif", fontWeight: 700, cursor: "pointer", width: "100%", boxShadow: "0 4px 14px rgba(74,222,128,0.3)" }}>
-                Leave it buried
+                Keep the money
               </button>
               <button
                 onClick={() => {
@@ -936,7 +937,7 @@ function Graveyard({ spendLog, onBack, onResurrect }) {
                 }}
                 style={{ padding: "12px", background: "transparent", border: "none", color: "#475569", fontSize: 13, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", textDecoration: "underline" }}
               >
-                Resurrect (Buy)
+                Buy it anyway
               </button>
             </div>
           </div>
