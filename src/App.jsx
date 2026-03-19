@@ -494,91 +494,143 @@ function TimerAlert({ item, onResolve, onSnooze }) {
   );
 }
 
+// ============ GRIMM COMPANION ============
+
+const GRIMM_IMAGES = {
+  full: "/grimm/grimm-full.png",
+  light: "/grimm/grimm-light.png",
+  survival: "/grimm/grimm-survival.png",
+};
+
+const GRIMM_LINES = [
+  "Eyes open.",
+  "Pause first.",
+  "Not every urge deserves a vote.",
+  "Careful.",
+  "I'm watching the leaks.",
+  "Working.",
+  "Keep the gate tight.",
+  "That one smells impulsive.",
+];
+
+function GrimmCompanion({ mode }) {
+  const [line, setLine] = useState(null);
+  const [fadeKey, setFadeKey] = useState(0);
+
+  useEffect(() => {
+    if (line === null) return;
+    const timer = setTimeout(() => setLine(null), 2500);
+    return () => clearTimeout(timer);
+  }, [line, fadeKey]);
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    setLine(GRIMM_LINES[Math.floor(Math.random() * GRIMM_LINES.length)]);
+    setFadeKey(k => k + 1);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", position: "relative", flexShrink: 0 }}>
+      {/* Grimm idle animation */}
+      <style>{`
+        @keyframes grimmIdle {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-2.5px) rotate(0.5deg); }
+        }
+      `}</style>
+
+      <img
+        src={GRIMM_IMAGES[mode] || GRIMM_IMAGES.full}
+        alt="Grimm"
+        onClick={handleClick}
+        style={{
+          width: 75,
+          height: 75,
+          objectFit: "contain",
+          cursor: "pointer",
+          animation: "grimmIdle 3s ease-in-out infinite",
+          filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.6))",
+          WebkitTapHighlightColor: "transparent",
+          userSelect: "none",
+        }}
+      />
+
+      {/* Click line — small inline text below Grimm */}
+      {line && (
+        <p
+          key={fadeKey}
+          style={{
+            fontFamily: "'DM Sans', sans-serif",
+            fontSize: 12,
+            color: "#94A3B8",
+            margin: "6px 0 0",
+            textAlign: "center",
+            whiteSpace: "nowrap",
+            opacity: 1,
+            animation: "grimmLineFade 2.5s ease-out forwards",
+          }}
+        >
+          {line}
+        </p>
+      )}
+      <style>{`
+        @keyframes grimmLineFade {
+          0% { opacity: 0; transform: translateY(4px); }
+          10% { opacity: 1; transform: translateY(0); }
+          75% { opacity: 1; }
+          100% { opacity: 0; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // ============ THE HOLLOW TREE (CROW) ============
 
 function HollowTree({ mode, savedAmount, streak, insight }) {
   const m = MODES[mode];
-  const [poked, setPoked] = useState(false);
 
-  // ---> CHANGE HIS NAME HERE IF YOU WANT MORTIMER <---
-  const crowName = "Grimm"; 
+  const crowName = "Grimm";
 
-  // The Crow's stance changes based on your daily capacity
-  let crowStance = "scale(1)";
-  let crowFilter = "brightness(1)";
   let modeVibe = "Standing by.";
-  
   if (mode === "survival") {
-    crowStance = "scale(1.1) translateY(5px)"; // Puffed up, heavy
-    crowFilter = "brightness(0.8) contrast(1.2)"; // Darker, moodier
     modeVibe = "Guarding the gate.";
   } else if (mode === "light") {
-    crowStance = "scale(0.95) rotate(-5deg)"; // Leaning, suspicious
     modeVibe = "Watching closely.";
   }
 
-  const handlePoke = () => {
-    setPoked(true);
-    setTimeout(() => setPoked(false), 2500);
-  };
-
   return (
     <section style={{ background: "#0A0D14", border: `2px solid ${m.color}40`, borderRadius: 28, padding: "24px 20px", marginBottom: 18, position: "relative", overflow: "hidden", boxShadow: "inset 0 10px 30px rgba(0,0,0,0.5), 0 18px 36px rgba(0,0,0,0.16)" }}>
-      
+
       {/* Background tree vibe */}
       <div style={{ position: "absolute", top: "40%", left: "50%", transform: "translate(-50%, -50%)", width: 220, height: 220, background: "#020408", borderRadius: "50%", border: "4px solid #131B2A", zIndex: 0 }}></div>
 
-      {/* Header Data (Merged from old Hero) */}
+      {/* Header: Mode label + Grimm image side by side */}
       <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
          <div>
            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: m.color + "AA", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 4 }}>Today</p>
            <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 36, lineHeight: 1, fontWeight: 600, color: m.color, margin: 0 }}>{m.label}</h1>
+           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#94A3B8", margin: "8px 0 0" }}>{crowName} is {modeVibe.toLowerCase()}</p>
          </div>
-         <div style={{ textAlign: "right" }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: "#94A3B8", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>{crowName} is</p>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#E2E8F0", margin: 0 }}>{modeVibe}</p>
-         </div>
+         {/* Grimm sits in the top-right of the hero */}
+         <GrimmCompanion mode={mode} />
       </div>
 
-      {/* The Crow & Interaction */}
-      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", marginTop: 10 }}>
-        
-        {/* Speech Bubble (Insight, Focus, or Poke) */}
-        <div style={{ minHeight: 60, marginBottom: 16, width: "100%", display: "flex", justifyContent: "center" }}>
-          {poked ? (
-            <div style={{ background: "#F1F5F9", color: "#020617", padding: "10px 16px", borderRadius: "16px 16px 16px 4px", fontFamily: "'Fraunces', serif", fontSize: 16, fontWeight: 700, border: "2px solid #334155", animation: "pulse 0.3s ease-out" }}>
-              "I'm working here. Back off."
-            </div>
-          ) : insight ? (
-            <div style={{ background: insight.bg, border: `1px solid ${insight.color}40`, padding: "12px 16px", borderRadius: "16px 16px 16px 4px", maxWidth: "95%", boxShadow: "0 8px 16px rgba(0,0,0,0.2)" }}>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#E2E8F0", margin: 0, lineHeight: 1.4 }}>"{insight.text}"</p>
-            </div>
-          ) : (
-            <div style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, padding: "12px 16px", borderRadius: "16px 16px 16px 4px", maxWidth: "90%" }}>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#B6C0D2", margin: 0, lineHeight: 1.4 }}>"{m.focus}"</p>
-            </div>
-          )}
-        </div>
-
-        {/* The Bird */}
-        <div 
-          onClick={handlePoke}
-          style={{ 
-            fontSize: 80, 
-            cursor: "pointer", 
-            transform: crowStance, 
-            filter: crowFilter, 
-            transition: "all 0.4s ease-out",
-            WebkitTapHighlightColor: "transparent",
-            textShadow: "0 10px 20px rgba(0,0,0,0.8)"
-          }}
-        >
-          🐦‍⬛
-        </div>
+      {/* Insight / Focus bubble */}
+      <div style={{ position: "relative", zIndex: 1, minHeight: 50, marginBottom: 8, width: "100%", display: "flex", justifyContent: "center" }}>
+        {insight ? (
+          <div style={{ background: insight.bg, border: `1px solid ${insight.color}40`, padding: "12px 16px", borderRadius: "16px 16px 16px 4px", maxWidth: "95%", boxShadow: "0 8px 16px rgba(0,0,0,0.2)" }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#E2E8F0", margin: 0, lineHeight: 1.4 }}>"{insight.text}"</p>
+          </div>
+        ) : (
+          <div style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, padding: "12px 16px", borderRadius: "16px 16px 16px 4px", maxWidth: "90%" }}>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#B6C0D2", margin: 0, lineHeight: 1.4 }}>"{m.focus}"</p>
+          </div>
+        )}
       </div>
 
       {/* The Hoard (Your Stats) */}
-      <div style={{ position: "relative", zIndex: 1, display: "flex", gap: 12, justifyContent: "center", marginTop: 24 }}>
+      <div style={{ position: "relative", zIndex: 1, display: "flex", gap: 12, justifyContent: "center", marginTop: 16 }}>
         <div style={{ background: "rgba(10, 46, 26, 0.7)", border: "1px solid #4ADE8030", borderRadius: 16, padding: "12px 16px", textAlign: "center", flex: 1, backdropFilter: "blur(4px)" }}>
           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: "#4ADE80", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>The Hoard</p>
           <p style={{ fontFamily: "'Fraunces', serif", fontSize: 24, color: "#4ADE80", margin: 0, textShadow: "0 0 15px rgba(74,222,128,0.3)" }}>${savedAmount.toLocaleString()}</p>
@@ -591,6 +643,7 @@ function HollowTree({ mode, savedAmount, streak, insight }) {
     </section>
   );
 }
+
 
 // ============ DASHBOARD ============
 
