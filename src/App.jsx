@@ -503,14 +503,14 @@ const GRIMM_IMAGES = {
 };
 
 const GRIMM_LINES = [
-  "Eyes open.",
   "Pause first.",
-  "Not every urge deserves a vote.",
+  "Eyes open.",
   "Careful.",
-  "I'm watching the leaks.",
   "Working.",
   "Keep the gate tight.",
-  "That one smells impulsive.",
+  "Still leaking.",
+  "That can wait.",
+  "Good kill.",
 ];
 
 function GrimmCompanion({ mode }) {
@@ -587,58 +587,24 @@ function GrimmCompanion({ mode }) {
 
 // ============ THE HOLLOW TREE (CROW) ============
 
-function HollowTree({ mode, savedAmount, streak, insight }) {
+function HollowTree({ mode, savedAmount }) {
   const m = MODES[mode];
 
-  const crowName = "Grimm";
-
-  let modeVibe = "Standing by.";
-  if (mode === "survival") {
-    modeVibe = "Guarding the gate.";
-  } else if (mode === "light") {
-    modeVibe = "Watching closely.";
-  }
-
   return (
-    <section style={{ background: "#0A0D14", border: `2px solid ${m.color}40`, borderRadius: 28, padding: "24px 20px", marginBottom: 18, position: "relative", overflow: "hidden", boxShadow: "inset 0 10px 30px rgba(0,0,0,0.5), 0 18px 36px rgba(0,0,0,0.16)" }}>
-
-      {/* Background tree vibe */}
-      <div style={{ position: "absolute", top: "40%", left: "50%", transform: "translate(-50%, -50%)", width: 220, height: 220, background: "#020408", borderRadius: "50%", border: "4px solid #131B2A", zIndex: 0 }}></div>
-
-      {/* Header: Mode label + Grimm image side by side */}
-      <div style={{ position: "relative", zIndex: 1, display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-         <div>
-           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: m.color + "AA", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 4 }}>Today</p>
-           <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 36, lineHeight: 1, fontWeight: 600, color: m.color, margin: 0 }}>{m.label}</h1>
-           <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#94A3B8", margin: "8px 0 0" }}>{crowName} is {modeVibe.toLowerCase()}</p>
-         </div>
-         {/* Grimm sits in the top-right of the hero */}
-         <GrimmCompanion mode={mode} />
+    <section style={{ padding: "0 0 20px", marginBottom: 8 }}>
+      {/* Hero row: mode info + Grimm */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: m.color + "AA", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 3 }}>Today</p>
+          <h1 style={{ fontFamily: "'Fraunces', serif", fontSize: 28, lineHeight: 1.1, fontWeight: 600, color: m.color, margin: 0 }}>{m.label}</h1>
+        </div>
+        <GrimmCompanion mode={mode} />
       </div>
 
-      {/* Insight / Focus bubble */}
-      <div style={{ position: "relative", zIndex: 1, minHeight: 50, marginBottom: 8, width: "100%", display: "flex", justifyContent: "center" }}>
-        {insight ? (
-          <div style={{ background: insight.bg, border: `1px solid ${insight.color}40`, padding: "12px 16px", borderRadius: "16px 16px 16px 4px", maxWidth: "95%", boxShadow: "0 8px 16px rgba(0,0,0,0.2)" }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#E2E8F0", margin: 0, lineHeight: 1.4 }}>"{insight.text}"</p>
-          </div>
-        ) : (
-          <div style={{ background: "rgba(255,255,255,0.05)", border: `1px solid rgba(255,255,255,0.1)`, padding: "12px 16px", borderRadius: "16px 16px 16px 4px", maxWidth: "90%" }}>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 14, color: "#B6C0D2", margin: 0, lineHeight: 1.4 }}>"{m.focus}"</p>
-          </div>
-        )}
-      </div>
-
-      {/* The Hoard (Your Stats) */}
-      <div style={{ position: "relative", zIndex: 1, display: "flex", gap: 12, justifyContent: "center", marginTop: 16 }}>
-        <div style={{ background: "rgba(10, 46, 26, 0.7)", border: "1px solid #4ADE8030", borderRadius: 16, padding: "12px 16px", textAlign: "center", flex: 1, backdropFilter: "blur(4px)" }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: "#4ADE80", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>The Hoard</p>
-          <p style={{ fontFamily: "'Fraunces', serif", fontSize: 24, color: "#4ADE80", margin: 0, textShadow: "0 0 15px rgba(74,222,128,0.3)" }}>${savedAmount.toLocaleString()}</p>
-        </div>
-        <div style={{ background: "rgba(30, 41, 59, 0.7)", border: "1px solid #334155", borderRadius: 16, padding: "12px 16px", textAlign: "center", flex: 0.7, backdropFilter: "blur(4px)" }}>
-          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: "#94A3B8", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Streak</p>
-          <p style={{ fontFamily: "'Fraunces', serif", fontSize: 24, color: "#F1F5F9", margin: 0 }}>{streak}</p>
-        </div>
+      {/* The Hoard — single stat */}
+      <div style={{ background: "rgba(10, 46, 26, 0.5)", border: "1px solid #4ADE8025", borderRadius: 14, padding: "12px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11, color: "#4ADE80", margin: 0, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1.5 }}>The Hoard</p>
+        <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, color: "#4ADE80", margin: 0, textShadow: "0 0 12px rgba(74,222,128,0.2)" }}>${savedAmount.toLocaleString()}</p>
       </div>
     </section>
   );
@@ -753,7 +719,7 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
   return (
     <div style={{ minHeight: "100vh", padding: "30px 20px 24px", maxWidth: 480, margin: "0 auto" }}>
       {/* THE GUARDIAN CROW */}
-      <HollowTree mode={mode} savedAmount={savedAmount} streak={streak} insight={realTalkInsight} />
+      <HollowTree mode={mode} savedAmount={savedAmount} />
 
       {/* READY TIMER */}
       {hasReady && (
@@ -826,6 +792,20 @@ function Dashboard({ mode, setScreen, spendLog, pendingItems, readyItems, checki
           </div>
         </section>
       )}
+
+      {/* STREAK + INSIGHT */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 18 }}>
+        <div style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 14, padding: "12px 14px", textAlign: "center", minWidth: 72 }}>
+          <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 10, color: "#64748B", margin: "0 0 4px", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>Streak</p>
+          <p style={{ fontFamily: "'Fraunces', serif", fontSize: 22, color: streak >= 3 ? "#4ADE80" : "#F1F5F9", margin: 0 }}>{streak}</p>
+        </div>
+        {realTalkInsight && (
+          <div style={{ flex: 1, background: realTalkInsight.bg, border: `1px solid ${realTalkInsight.color}25`, borderRadius: 14, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>{realTalkInsight.icon}</span>
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 12, color: "#CBD5E1", margin: 0, lineHeight: 1.4 }}>{realTalkInsight.text}</p>
+          </div>
+        )}
+      </div>
 
       {/* MORE TOOLS */}
       <section style={{ marginBottom: 16 }}>
